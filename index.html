@@ -774,6 +774,13 @@
     padding: 4px 5px;
     vertical-align: middle;
   }
+  .rep-time-label{
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+    white-space: nowrap;
+  }
+
   .rep-table input, .rep-table select{
     width: 100%;
     padding: 5px 6px;
@@ -2278,13 +2285,32 @@ function renderReporteTable(){
 
       const mostrarNombreManual = fila.empleadoId === '__manual__';
 
+      let ingresoLabel = 'Ingreso', salidaLabel = 'Salida';
+      let horasAutoCalculadas = false;
+      if(fila.tipo === 'Atraso'){
+        ingresoLabel = 'Debía ingresar';
+        salidaLabel = 'Llegó';
+        horasAutoCalculadas = true;
+      } else if(fila.tipo === 'Salida antes de tiempo'){
+        ingresoLabel = 'Salió';
+        salidaLabel = 'Debía salir';
+        horasAutoCalculadas = true;
+      }
+      const disabledHoras = horasAutoCalculadas ? 'disabled' : '';
+
       html += `<tr data-piazza-id="${piazzaGrupo.id}" data-fila-id="${fila.id}">
         <td>
           <select class="rep-f" data-campo="empleadoId">${opcionesNombre}</select>
           ${mostrarNombreManual ? `<input type="text" class="rep-f" data-campo="nombreManual" value="${fila.nombreManual || ''}" placeholder="Nombre" style="margin-top:2px;">` : ''}
         </td>
-        <td><input type="time" class="rep-f" data-campo="ingreso" value="${fila.ingreso || ''}"></td>
-        <td><input type="time" class="rep-f" data-campo="salida" value="${fila.salida || ''}"></td>
+        <td>
+          <div class="rep-time-label">${ingresoLabel}</div>
+          <input type="time" class="rep-f" data-campo="ingreso" value="${fila.ingreso || ''}">
+        </td>
+        <td>
+          <div class="rep-time-label">${salidaLabel}</div>
+          <input type="time" class="rep-f" data-campo="salida" value="${fila.salida || ''}">
+        </td>
         <td><input type="text" class="rep-f" data-campo="horario" value="${fila.horario || ''}" placeholder="Horario"></td>
         <td><select class="rep-f" data-campo="tipo">
           <option value="">—</option>
@@ -2292,9 +2318,10 @@ function renderReporteTable(){
         </select></td>
         <td>
           <div style="display:flex; gap:3px;">
-            <select class="rep-f" data-campo="horasH" style="width:50%;">${Array.from({length:25}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasH||0) === n ? 'selected' : ''}>${n}h</option>`).join('')}</select>
-            <select class="rep-f" data-campo="horasM" style="width:50%;">${Array.from({length:60}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasM||0) === n ? 'selected' : ''}>${n}m</option>`).join('')}</select>
+            <select class="rep-f" data-campo="horasH" style="width:50%;" ${disabledHoras}>${Array.from({length:25}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasH||0) === n ? 'selected' : ''}>${n}h</option>`).join('')}</select>
+            <select class="rep-f" data-campo="horasM" style="width:50%;" ${disabledHoras}>${Array.from({length:60}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasM||0) === n ? 'selected' : ''}>${n}m</option>`).join('')}</select>
           </div>
+          ${horasAutoCalculadas ? '<div class="rep-time-label">Calculado automático</div>' : ''}
         </td>
         <td><input type="text" class="rep-f" data-campo="detalle" value="${fila.detalle || ''}" placeholder="Observación"></td>
         <td>${impactoHtml}</td>
@@ -2383,6 +2410,15 @@ async function onRepFieldChange(e){
     fila[campo] = e.target.value;
   }
 
+  // For Atraso / Salida antes de tiempo, the hours are always derived from
+  // the two time fields (debía vs. real), never typed in manually.
+  if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo'){
+    const mins = minutesBetween(fila.ingreso, fila.salida);
+    fila.horas = Math.round((mins / 60) * 100) / 100;
+    fila.horasH = Math.floor(mins / 60);
+    fila.horasM = mins % 60;
+  }
+
   await syncFilaToAsistencia(rep, fila);
   await saveReporteActual();
   await saveEmpleados();
@@ -2397,10 +2433,12 @@ async function syncFilaToAsistencia(rep, fila){
   const linkId = 'repfila_' + fila.id;
 
   // Always clear any previous linked entry first, in case the tipo,
-  // employee, or hours changed since the last save.
+  // employee, times, or hours changed since the last save.
   empleados.forEach(e => {
-    if(e.asistencia && e.asistencia.horas){
-      e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+    if(e.asistencia){
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
     }
   });
 
@@ -2408,22 +2446,41 @@ async function syncFilaToAsistencia(rep, fila){
   const emp = empleados.find(e => e.id === fila.empleadoId);
   if(!emp) return;
 
-  const horas = Number(fila.horas) || 0;
-  if(horas <= 0) return;
-
-  let tipoImpacto = null;
-  if(fila.tipo === 'Horas extras') tipoImpacto = 'favor';
-  else if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo') tipoImpacto = 'contra';
-  if(!tipoImpacto) return;
-
   const asis = ensureAsistencia(emp);
-  asis.horas.push({
-    id: linkId,
-    fecha: rep.fecha,
-    tipo: tipoImpacto,
-    horas,
-    motivo: `${fila.detalle || fila.tipo} (Reporte diario de mantenimiento)`
-  });
+
+  if(fila.tipo === 'Atraso'){
+    if(!fila.ingreso || !fila.salida) return;
+    // ingreso = hora que debía ingresar, salida = hora que llegó — same
+    // semantics as the Atrasos vs Horas a favor tab, so the "Total" there
+    // computes correctly from these two times.
+    asis.atrasos.push({
+      id: linkId,
+      fecha: rep.fecha,
+      horaInicio: fila.ingreso,
+      horaFin: fila.salida,
+      motivo: `${fila.detalle || 'Atraso'} (Reporte diario de mantenimiento)`
+    });
+  } else if(fila.tipo === 'Salida antes de tiempo'){
+    if(!fila.ingreso || !fila.salida) return;
+    // ingreso = hora en que salió, salida = hora que debía salir.
+    asis.salidas.push({
+      id: linkId,
+      fecha: rep.fecha,
+      horaInicio: fila.ingreso,
+      horaFin: fila.salida,
+      motivo: `${fila.detalle || 'Salida antes de tiempo'} (Reporte diario de mantenimiento)`
+    });
+  } else if(fila.tipo === 'Horas extras'){
+    const horas = Number(fila.horas) || 0;
+    if(horas <= 0) return;
+    asis.horas.push({
+      id: linkId,
+      fecha: rep.fecha,
+      tipo: 'favor',
+      horas,
+      motivo: `${fila.detalle || fila.tipo} (Reporte diario de mantenimiento)`
+    });
+  }
 }
 
 async function addReporteFila(piazzaId){
@@ -2446,8 +2503,10 @@ async function deleteReporteFila(piazzaId, filaId){
   if(!piazzaGrupo) return;
   const linkId = 'repfila_' + filaId;
   empleados.forEach(e => {
-    if(e.asistencia && e.asistencia.horas){
-      e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+    if(e.asistencia){
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
     }
   });
   piazzaGrupo.filas = piazzaGrupo.filas.filter(f => f.id !== filaId);
