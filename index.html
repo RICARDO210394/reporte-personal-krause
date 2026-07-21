@@ -318,6 +318,33 @@
     flex-shrink:0;
   }
 
+  .turno-piazza-sel{
+    flex-shrink:0;
+    width: 128px;
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    background: #fbfaf8;
+    font-size: 12px;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .turno-piazza-sel:focus{
+    outline:none;
+    border-color: var(--lav-deep);
+    background:#fff;
+  }
+  .turno-piazza-sel.tiene-cambio{
+    border-color: var(--peach-deep);
+    background: var(--peach);
+    color: #7a3a20;
+    font-weight:700;
+  }
+  .turno-row.is-libre .turno-piazza-sel{
+    background: #ececea;
+    color: var(--ink-soft);
+  }
+
   .btn-libre{
     flex-shrink:0;
     border: 1.5px solid var(--line);
@@ -1442,6 +1469,7 @@
               <input type="time" class="turno-time" id="f-turno-lunes-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-lunes-salida">
+              <select class="turno-piazza-sel" id="f-turno-lunes-piazza" data-day="lunes" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="lunes">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-martes">
@@ -1449,6 +1477,7 @@
               <input type="time" class="turno-time" id="f-turno-martes-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-martes-salida">
+              <select class="turno-piazza-sel" id="f-turno-martes-piazza" data-day="martes" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="martes">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-miercoles">
@@ -1456,6 +1485,7 @@
               <input type="time" class="turno-time" id="f-turno-miercoles-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-miercoles-salida">
+              <select class="turno-piazza-sel" id="f-turno-miercoles-piazza" data-day="miercoles" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="miercoles">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-jueves">
@@ -1463,6 +1493,7 @@
               <input type="time" class="turno-time" id="f-turno-jueves-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-jueves-salida">
+              <select class="turno-piazza-sel" id="f-turno-jueves-piazza" data-day="jueves" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="jueves">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-viernes">
@@ -1470,6 +1501,7 @@
               <input type="time" class="turno-time" id="f-turno-viernes-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-viernes-salida">
+              <select class="turno-piazza-sel" id="f-turno-viernes-piazza" data-day="viernes" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="viernes">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-sabado">
@@ -1477,6 +1509,7 @@
               <input type="time" class="turno-time" id="f-turno-sabado-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-sabado-salida">
+              <select class="turno-piazza-sel" id="f-turno-sabado-piazza" data-day="sabado" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="sabado">Libre</button>
             </div>
             <div class="turno-row" id="turno-row-domingo">
@@ -1484,6 +1517,7 @@
               <input type="time" class="turno-time" id="f-turno-domingo-ingreso">
               <span class="turno-sep">–</span>
               <input type="time" class="turno-time" id="f-turno-domingo-salida">
+              <select class="turno-piazza-sel" id="f-turno-domingo-piazza" data-day="domingo" title="Piazza donde trabaja este día (si es distinta a la habitual)"></select>
               <button type="button" class="btn-libre" data-day="domingo">Libre</button>
             </div>
           </div>
@@ -1779,6 +1813,19 @@ const DIAS = [
 const STORAGE_KEY = "empleados-registro";
 let editingId = null;
 let empleados = [];
+
+// Populate each day's "Piazza este día" override selector. Blank = use the
+// employee's regular "Piazza donde trabaja"; picking one only overrides
+// that specific day (e.g. someone who splits their week between Ceibos and
+// Bosques).
+document.querySelectorAll('.turno-piazza-sel').forEach(sel => {
+  sel.innerHTML = '<option value="">— Misma Piazza —</option>' +
+    PIAZZAS.map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.addEventListener('change', () => {
+    sel.classList.toggle('tiene-cambio', !!sel.value);
+  });
+});
+
 let currentFotoData = null; // base64 of photo currently in the form
 let hojaOpenId = null; // employee id currently shown in the "hoja" modal
 
@@ -2427,7 +2474,13 @@ function renderReporteTable(){
   let html = '';
   rep.piazzas.forEach(piazzaGrupo => {
     const color = PIAZZA_COLORES[piazzaGrupo.nombre] || '#7a8a95';
-    const empleadosDeEstaPiazza = empleados.filter(e => e.piazza === piazzaGrupo.nombre && e.departamento === 'Mantenimiento');
+    const empleadosDeEstaPiazza = empleados.filter(e => {
+      if(e.departamento !== 'Mantenimiento') return false;
+      const piazzaDeHoy = modoReporte === 'plantilla'
+        ? getPiazzaForEmpleadoDiaKey(e, diaSemanaActual)
+        : getPiazzaForEmpleadoFecha(e, rep.fecha);
+      return piazzaDeHoy === piazzaGrupo.nombre;
+    });
     html += `<tr class="rep-piazza-band" style="background:${color};"><td colspan="8">${piazzaGrupo.nombre}</td><td><button class="rep-del-piazza" data-piazza-id="${piazzaGrupo.id}" title="Eliminar Piazza">🗑</button></td></tr>`;
 
     piazzaGrupo.filas.forEach(fila => {
@@ -2521,6 +2574,25 @@ function getHorarioForEmpleadoFecha(emp, fechaStr){
   const d = new Date(fechaStr + 'T00:00:00');
   const dayKey = DIA_SEMANA_KEYS[d.getDay()];
   return getHorarioForEmpleadoDiaKey(emp, dayKey);
+}
+
+function getPiazzaForEmpleadoDiaKey(emp, dayKey){
+  // Most employees work at the same Piazza every day (emp.piazza). Some
+  // split their week between two Piazzas (e.g. Ceibos/Bosques) — for those,
+  // a specific day can override which Piazza they belong to that day.
+  if(!emp || !dayKey || !emp.turno || typeof emp.turno === 'string' || emp.turno._modo === 'rotativo'){
+    return emp ? emp.piazza : '';
+  }
+  const val = emp.turno[dayKey];
+  if(val && typeof val === 'object' && val.piazza) return val.piazza;
+  return emp.piazza;
+}
+
+function getPiazzaForEmpleadoFecha(emp, fechaStr){
+  if(!fechaStr) return emp ? emp.piazza : '';
+  const d = new Date(fechaStr + 'T00:00:00');
+  const dayKey = DIA_SEMANA_KEYS[d.getDay()];
+  return getPiazzaForEmpleadoDiaKey(emp, dayKey);
 }
 
 function getHorarioForEmpleadoDiaKey(emp, dayKey){
@@ -3750,10 +3822,15 @@ function setDayLibre(dayKey, libre){
   const row = document.getElementById('turno-row-' + dayKey);
   const ingreso = document.getElementById('f-turno-' + dayKey + '-ingreso');
   const salida = document.getElementById('f-turno-' + dayKey + '-salida');
+  const piazzaSel = document.getElementById('f-turno-' + dayKey + '-piazza');
   if(btn) btn.classList.toggle('active', libre);
   if(row) row.classList.toggle('is-libre', libre);
   if(ingreso){ ingreso.disabled = libre; if(libre) ingreso.value = ''; }
   if(salida){ salida.disabled = libre; if(libre) salida.value = ''; }
+  if(piazzaSel){
+    piazzaSel.disabled = libre;
+    if(libre){ piazzaSel.value = ''; piazzaSel.classList.remove('tiene-cambio'); }
+  }
 }
 
 function readTurnoFromForm(){
@@ -3764,10 +3841,12 @@ function readTurnoFromForm(){
   const turno = { _modo: 'dias' };
   DIAS.forEach(d => {
     const libre = isDayLibre(d.key);
+    const piazzaSel = document.getElementById('f-turno-' + d.key + '-piazza');
     turno[d.key] = {
       libre,
       ingreso: libre ? '' : document.getElementById('f-turno-' + d.key + '-ingreso').value,
-      salida: libre ? '' : document.getElementById('f-turno-' + d.key + '-salida').value
+      salida: libre ? '' : document.getElementById('f-turno-' + d.key + '-salida').value,
+      piazza: libre ? '' : (piazzaSel ? piazzaSel.value : '')
     };
   });
   return turno;
@@ -3778,6 +3857,13 @@ function setTurnoModo(modo){
   document.getElementById('turno-dias-wrap').style.display = modo === 'rotativo' ? 'none' : 'block';
 }
 
+function setDayPiazza(dayKey, value){
+  const sel = document.getElementById('f-turno-' + dayKey + '-piazza');
+  if(!sel) return;
+  sel.value = value || '';
+  sel.classList.toggle('tiene-cambio', !!value);
+}
+
 function writeTurnoToForm(turno){
   if(!turno){
     setTurnoModo('dias');
@@ -3785,6 +3871,7 @@ function writeTurnoToForm(turno){
       setDayLibre(d.key, false);
       document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
       document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      setDayPiazza(d.key, '');
     });
     return;
   }
@@ -3798,6 +3885,7 @@ function writeTurnoToForm(turno){
       setDayLibre(d.key, false);
       document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
       document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      setDayPiazza(d.key, '');
     });
     return;
   }
@@ -3812,6 +3900,7 @@ function writeTurnoToForm(turno){
       setDayLibre(d.key, false);
       document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
       document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      setDayPiazza(d.key, '');
       return;
     }
     if(typeof val === 'string'){
@@ -3820,11 +3909,13 @@ function writeTurnoToForm(turno){
       setDayLibre(d.key, isLibre);
       document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
       document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      setDayPiazza(d.key, '');
       return;
     }
     setDayLibre(d.key, !!val.libre);
     document.getElementById('f-turno-' + d.key + '-ingreso').value = val.ingreso || '';
     document.getElementById('f-turno-' + d.key + '-salida').value = val.salida || '';
+    setDayPiazza(d.key, val.piazza || '');
   });
 }
 
@@ -3838,8 +3929,9 @@ function turnoSummary(turno){
     if(!val) return '';
     if(typeof val === 'string') return val.trim(); // previous per-day free-text format
     if(val.libre) return 'Libre';
-    if(val.ingreso && val.salida) return `${val.ingreso}-${val.salida}`;
-    if(val.ingreso || val.salida) return `${val.ingreso || '?'}-${val.salida || '?'}`;
+    const piazzaTag = val.piazza ? ` (${val.piazza})` : '';
+    if(val.ingreso && val.salida) return `${val.ingreso}-${val.salida}${piazzaTag}`;
+    if(val.ingreso || val.salida) return `${val.ingreso || '?'}-${val.salida || '?'}${piazzaTag}`;
     return '';
   });
   if(values.every(v => !v)) return '—';
@@ -3930,11 +4022,13 @@ document.getElementById('btn-copiar-lv').addEventListener('click', () => {
   const libre = isDayLibre('lunes');
   const ingreso = document.getElementById('f-turno-lunes-ingreso').value;
   const salida = document.getElementById('f-turno-lunes-salida').value;
+  const piazzaLunes = document.getElementById('f-turno-lunes-piazza').value;
   ['martes','miercoles','jueves','viernes'].forEach(day => {
     setDayLibre(day, libre);
     if(!libre){
       document.getElementById('f-turno-' + day + '-ingreso').value = ingreso;
       document.getElementById('f-turno-' + day + '-salida').value = salida;
+      setDayPiazza(day, piazzaLunes);
     }
   });
 });
