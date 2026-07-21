@@ -3965,10 +3965,27 @@ async function loadEmpleados(){
       console.error('loadEmpleados error (fallo #' + consecutiveLoadErrors + '):', e);
     }
     if(!hasLoadedOnce){
-      // Truly the first load and the key doesn't exist yet -> empty is correct.
-      empleados = [];
-      hasLoadedOnce = true;
-      renderList();
+      const esDocumentoInexistente = e && e.message && e.message.indexOf('Documento no encontrado') !== -1;
+      if(esDocumentoInexistente){
+        // Truly the first load and the key doesn't exist yet -> empty is correct.
+        empleados = [];
+        hasLoadedOnce = true;
+        renderList();
+      } else {
+        // A REAL connection/permission error — show it plainly on screen so
+        // it's obvious this is not "no employees registered", it's a
+        // database problem (most likely Firestore security rules).
+        const area = document.getElementById('list-area');
+        if(area){
+          area.className = '';
+          area.innerHTML = `<div class="empty-state" style="color:var(--peach-deep);">
+            <div class="big">⚠️</div>
+            No se pudo conectar con la base de datos.<br>
+            <span style="font-size:12px; color:var(--ink-soft);">${(e && e.message) ? e.message : 'Error desconocido'}</span><br>
+            <span style="font-size:12px; color:var(--ink-soft);">Revisa las reglas de seguridad de Firestore. Tus datos guardados no se han perdido.</span>
+          </div>`;
+        }
+      }
     }
     // Otherwise: keep showing whatever is already in memory, untouched.
   }
