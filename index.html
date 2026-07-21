@@ -923,6 +923,10 @@
   .rep-impacto-favor{ color: var(--favor); font-weight:800; text-align:center; }
   .rep-impacto-contra{ color: var(--contra); font-weight:800; text-align:center; }
 
+  .rep-table tbody tr.rep-row-contra td{ background: #fde8e4; }
+  .rep-table tbody tr.rep-row-favor td{ background: #e3f3e9; }
+  .rep-table tbody tr.rep-row-novedad td{ background: #fff6da; }
+
   .rep-totales-cards{
     display:grid;
     grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
@@ -2541,7 +2545,12 @@ function renderReporteTable(){
       }
       const disabledHoras = horasAutoCalculadas ? 'disabled' : '';
 
-      html += `<tr data-piazza-id="${piazzaGrupo.id}" data-fila-id="${fila.id}">
+      let filaTipoClase = '';
+      if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo') filaTipoClase = 'rep-row-contra';
+      else if(fila.tipo === 'Horas extras') filaTipoClase = 'rep-row-favor';
+      else if(fila.tipo === 'Novedad' || fila.tipo === 'Permiso' || fila.tipo === 'Otros') filaTipoClase = 'rep-row-novedad';
+
+      html += `<tr class="${filaTipoClase}" data-piazza-id="${piazzaGrupo.id}" data-fila-id="${fila.id}">
         <td>
           <select class="rep-f" data-campo="empleadoId">${opcionesNombre}</select>
           ${mostrarNombreManual ? `<input type="text" class="rep-f" data-campo="nombreManual" value="${fila.nombreManual || ''}" placeholder="Nombre" style="margin-top:2px;">` : ''}
