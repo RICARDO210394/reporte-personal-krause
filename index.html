@@ -1819,6 +1819,10 @@ PIAZZAS.forEach(p => {
 function refreshPerfilEmpleadoOptions(){
   const piazza = perfilPiazzaSel.value;
   const sel = document.getElementById('perfil-empleado');
+  // Remember who was open before rebuilding the dropdown, so a background
+  // refresh doesn't kick the person back to "selecciona un trabajador"
+  // while they're in the middle of looking at someone's profile.
+  const previoSeleccionado = sel.value;
 
   if(!piazza){
     sel.innerHTML = '<option value="">Selecciona una Piazza...</option>';
@@ -1835,7 +1839,14 @@ function refreshPerfilEmpleadoOptions(){
 
   sel.innerHTML = '<option value="">Seleccionar trabajador...</option>' +
     matches.map(e => `<option value="${e.id}">${e.nombres} ${e.apellidos}</option>`).join('');
-  document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+
+  const sigueExistiendo = previoSeleccionado && matches.some(e => e.id === previoSeleccionado);
+  if(sigueExistiendo){
+    sel.value = previoSeleccionado;
+    renderPerfil(previoSeleccionado);
+  } else {
+    document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+  }
 }
 
 perfilPiazzaSel.addEventListener('change', refreshPerfilEmpleadoOptions);
@@ -2165,6 +2176,7 @@ document.getElementById('btn-save-cal').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-delete-cal').addEventListener('click', async () => {
+  if(!confirm('¿Eliminar esta calificación de la semana? Esta acción no se puede deshacer.')) return;
   const emp = empleados.find(e => e.id === calModalEmpId);
   if(!emp) return;
   emp.calificaciones = (emp.calificaciones || []).filter(c => c.semana !== calModalSemana);
@@ -2644,6 +2656,7 @@ async function addReporteFila(piazzaId){
 }
 
 async function deleteReporteFila(piazzaId, filaId){
+  if(!confirm('¿Eliminar esta fila del reporte? Esta acción no se puede deshacer.')) return;
   const rep = getReporteActual();
   if(!rep) return;
   const piazzaGrupo = rep.piazzas.find(p => p.id === piazzaId);
@@ -2663,6 +2676,7 @@ async function deleteReporteFila(piazzaId, filaId){
 }
 
 async function deleteReportePiazza(piazzaId){
+  if(!confirm('¿Eliminar esta Piazza completa del reporte, junto con todas sus filas? Esta acción no se puede deshacer.')) return;
   const rep = getReporteActual();
   if(!rep) return;
   rep.piazzas = rep.piazzas.filter(p => p.id !== piazzaId);
@@ -2897,6 +2911,7 @@ function renderHistorialRepLista(){
   });
   area.querySelectorAll('[data-action="del"]').forEach(btn => {
     btn.addEventListener('click', async () => {
+      if(!confirm('¿Eliminar este reporte del historial? Esta acción no se puede deshacer.')) return;
       historialReportes = historialReportes.filter(h => h.id !== btn.dataset.id);
       await saveHistorialReportes();
       renderHistorialRepLista();
@@ -3581,6 +3596,7 @@ async function addHora(){
 }
 
 async function deleteAttRow(tipo, id){
+  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
   const emp = getAttEmpleado();
   if(!emp) return;
   const asis = ensureAsistencia(emp);
@@ -4194,6 +4210,9 @@ function editEmpleado(id){
 }
 
 async function deleteEmpleado(id){
+  const emp = empleados.find(e => e.id === id);
+  const nombre = emp ? `${emp.nombres} ${emp.apellidos}` : 'este empleado';
+  if(!confirm(`¿Eliminar a ${nombre} de forma permanente? Se borrará todo su historial (atrasos, calificaciones, comentarios). Esta acción no se puede deshacer.`)) return;
   empleados = empleados.filter(x => x.id !== id);
   renderList();
   await saveEmpleados();
