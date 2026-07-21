@@ -1,0 +1,3973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache">
+<title>Reporte del Personal Krause</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --bg: #f1f4f3;
+    --panel: #ffffff;
+    --ink: #333d3a;
+    --ink-soft: #74827c;
+    --lav: #c3ddef;
+    --lav-deep: #5b8fb0;
+    --mint: #cfe8c9;
+    --mint-deep: #6a9c5e;
+    --peach: #f3c9b8;
+    --peach-deep: #cf6f48;
+    --butter: #f2dca0;
+    --butter-deep: #b9862a;
+    --rose: #e6cbe0;
+    --line: #e2e7e2;
+    --celeste: #14b8c8;
+    --celeste-deep: #0d8f9c;
+    --celeste-light: #d2f2f4;
+    --favor: #3f9d5e;
+    --contra: #c8503f;
+    --radius: 18px;
+    --shadow: 0 6px 20px rgba(60,70,65,0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+  }
+
+  .wrap{ max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+  }
+
+  .brand-badge{
+    width: 46px; height:46px;
+    border-radius: 14px;
+    background: var(--celeste);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#fff; font-size:18px;
+    box-shadow: var(--shadow);
+  }
+
+  h1{
+    font-size: 22px;
+    margin:0;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle{
+    margin:0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .live-pill{
+    display:flex; align-items:center; gap:8px;
+    background: var(--panel);
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .dot{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--celeste);
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(20,184,200,0.5); }
+    70%{ box-shadow: 0 0 0 8px rgba(20,184,200,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(20,184,200,0); }
+  }
+
+  .tabs{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    background: #eee9e1;
+    padding: 6px;
+    border-radius: 14px;
+    width: fit-content;
+  }
+
+  .tab-btn{
+    border:none;
+    background: transparent;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor:pointer;
+    transition: background .15s, color .15s;
+  }
+
+  .tab-btn.active{
+    background: #fff;
+    color: var(--ink);
+    box-shadow: var(--shadow);
+    border-bottom: 3px solid var(--celeste);
+  }
+
+  .tab-btn-perfil{
+    background: var(--peach);
+    color: #7a3a20;
+  }
+  .tab-btn-perfil:hover{
+    background: var(--peach-deep);
+    color: #fff;
+  }
+  .tab-btn-perfil.active{
+    background: #fff;
+    color: var(--ink);
+    border-bottom: 3px solid var(--peach-deep);
+  }
+
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .grid{
+    display:block;
+  }
+
+  .panel{
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+
+  .panel h2{
+    font-size: 15px;
+    margin: 0 0 18px 0;
+    color: var(--ink);
+    display:flex; align-items:center; gap:8px;
+  }
+
+  .panel h2 .icon-dot{
+    width:10px;height:10px;border-radius:3px;
+    background: var(--celeste);
+  }
+
+  label{
+    display:block;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    margin-top: 14px;
+    font-weight: 600;
+  }
+
+  label:first-of-type{ margin-top:0; }
+
+  select, input[type="text"], input[type="date"]{
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: #fbfaf8;
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+    transition: border-color .15s, background .15s;
+  }
+
+  select:focus, input:focus{
+    outline: none;
+    border-color: var(--lav-deep);
+    background: #fff;
+  }
+
+  .row2{ display:flex; gap:10px; }
+  .row2 > div{ flex:1; }
+
+  .form-cols{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 28px;
+  }
+
+  .form-col{ min-width:0; }
+
+  @media (max-width: 760px){
+    .form-cols{ grid-template-columns: 1fr; }
+  }
+
+  .form-actions{
+    display:flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .form-actions .btn{ margin-top:0; }
+
+  .turno-grid{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+
+  .turno-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+
+  .turno-day-label{
+    width: 78px;
+    flex-shrink:0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .turno-time{
+    flex:1;
+    min-width: 0;
+    padding: 8px 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    background: #fbfaf8;
+    font-size: 13px;
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  .turno-time:focus{
+    outline:none;
+    border-color: var(--lav-deep);
+    background:#fff;
+  }
+
+  .turno-time:disabled{
+    background: #ececea;
+    color: var(--ink-soft);
+    border-color: var(--line);
+    cursor: not-allowed;
+  }
+
+  .turno-sep{
+    color: var(--ink-soft);
+    font-size: 13px;
+    flex-shrink:0;
+  }
+
+  .btn-libre{
+    flex-shrink:0;
+    border: 1.5px solid var(--line);
+    background: #fff;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight:700;
+    padding: 7px 10px;
+    border-radius: 8px;
+    cursor:pointer;
+  }
+  .btn-libre:hover{ background: var(--mint); border-color: var(--mint-deep); color: #2f5f47; }
+  .btn-libre.active{ background: var(--mint-deep); border-color: var(--mint-deep); color: #fff; }
+
+  .turno-row.is-libre .turno-time{
+    background: #ececea;
+    color: var(--ink-soft);
+  }
+
+  .turno-shortcuts{
+    display:flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap:wrap;
+  }
+  .turno-shortcuts .btn-mini{ display:inline-block; }
+
+  .btn{
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: var(--celeste);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform .12s, opacity .12s;
+  }
+  .btn:hover{ opacity: .92; }
+  .btn:active{ transform: scale(0.98); }
+
+  .btn.secondary{
+    background: #fff;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--line);
+  }
+
+  .btn.danger-outline{
+    background:#fff;
+    color: var(--peach-deep);
+    border: 1.5px solid var(--peach);
+  }
+
+  .err{
+    color: var(--peach-deep);
+    font-size: 12px;
+    margin-top: 8px;
+    min-height: 16px;
+  }
+
+  .toolbar{
+    display:flex; gap:10px; flex-wrap:wrap;
+    margin-bottom: 16px;
+  }
+
+  .toolbar select, .toolbar input{
+    width: auto;
+    min-width: 160px;
+  }
+
+  .toolbar .search{
+    flex:1;
+    min-width: 180px;
+  }
+
+  .count-chip{
+    background: var(--celeste-light);
+    color: var(--celeste-deep);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    align-self:center;
+  }
+
+  .cards{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    max-height: 640px;
+    overflow-y:auto;
+    padding-right: 4px;
+  }
+
+  .cards::-webkit-scrollbar{ width:6px; }
+  .cards::-webkit-scrollbar-thumb{ background: var(--line); border-radius:6px; }
+
+  .group-dep-header{
+    font-weight: 800;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin: 18px 0 8px 0;
+    color: #fff;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .group-dep-header:first-child{ margin-top: 0; }
+  .group-dep-header.dep-Asistente{ background: var(--lav-deep); }
+  .group-dep-header.dep-Monitoreo{ background: var(--mint-deep); }
+  .group-dep-header.dep-Mantenimiento{ background: var(--peach-deep); }
+  .group-dep-header.dep-Otro{ background: var(--butter-deep); }
+
+  .group-piazza-header{
+    font-weight: 700;
+    font-size: 12.5px;
+    padding: 6px 14px;
+    margin: 8px 0 6px 4px;
+    color: var(--ink-soft);
+    border-bottom: 1.5px dashed var(--line);
+    display:flex;
+    justify-content:space-between;
+  }
+
+  .group-count{
+    background: rgba(255,255,255,0.35);
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+  .group-piazza-header .group-count{
+    background: var(--celeste-light);
+    color: var(--celeste-deep);
+  }
+
+  .emp-card{
+    border-radius: 14px;
+    border: 1.5px solid var(--line);
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    background: #fdfcfb;
+    position: relative;
+    overflow:hidden;
+  }
+
+  .emp-card::before{
+    content:"";
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width: 5px;
+  }
+
+  .emp-card.dep-Asistente::before{ background: var(--lav-deep); }
+  .emp-card.dep-Monitoreo::before{ background: var(--mint-deep); }
+  .emp-card.dep-Mantenimiento::before{ background: var(--peach-deep); }
+  .emp-card.dep-Otro::before{ background: var(--butter-deep); }
+
+  .avatar{
+    width: 42px; height:42px;
+    border-radius: 50%;
+    background: var(--rose);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#6b5940;
+    flex-shrink:0;
+    font-size:14px;
+  }
+
+  .emp-info{ flex:1; min-width:0; }
+  .emp-name{ font-weight:700; font-size:14px; }
+  .emp-meta{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top:3px;
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+
+  .tag{
+    display:inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .tag.dep-Asistente{ background:#e4e7fa; color:#4c58a8; }
+  .tag.dep-Monitoreo{ background:#e0f3e8; color:#337a5c; }
+  .tag.dep-Mantenimiento{ background:#fce4da; color:#b5502d; }
+  .tag.dep-Otro{ background:#fbeec6; color:#8a6c15; }
+
+  .card-actions{
+    display:flex; gap:6px;
+    flex-shrink:0;
+  }
+
+  .icon-btn{
+    width: 32px; height:32px;
+    border-radius: 9px;
+    border: 1.5px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 14px;
+    transition: background .12s;
+  }
+  .icon-btn:hover{ background: #f4f2ee; }
+  .icon-btn.del:hover{ background: var(--peach); }
+
+  /* Photo upload in form */
+  .photo-upload{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  .photo-preview{
+    width: 64px; height:64px;
+    border-radius: 14px;
+    background: #f1eee7;
+    border: 1.5px dashed var(--line);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    flex-shrink:0;
+    font-size: 22px;
+    color: var(--ink-soft);
+  }
+
+  .photo-preview img{
+    width:100%; height:100%; object-fit:cover;
+  }
+
+  .photo-btns{ display:flex; flex-direction:column; gap:6px; flex:1; }
+
+  .photo-btns input[type="file"]{ display:none; }
+
+  .btn-mini{
+    padding: 7px 12px;
+    border-radius: 9px;
+    border: 1.5px solid var(--line);
+    background:#fff;
+    font-size: 12px;
+    font-weight:600;
+    color: var(--ink-soft);
+    cursor:pointer;
+    text-align:center;
+  }
+  .btn-mini:hover{ background:#f4f2ee; }
+
+  .avatar img{
+    width:100%; height:100%;
+    border-radius:50%;
+    object-fit:cover;
+  }
+
+  /* Modal - Hoja de Comportamiento */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(58,52,45,0.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-overlay.show{ display:flex; }
+
+  .modal-box{
+    background:#fff;
+    border-radius: 20px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y:auto;
+    padding: 30px 34px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+
+  .modal-close-row{
+    display:flex;
+    justify-content:flex-end;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .hoja-title{
+    text-align:center;
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 22px 0;
+    color: #222;
+  }
+
+  .hoja-body{
+    display:flex;
+    gap: 26px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+
+  .hoja-table{
+    flex: 1;
+    min-width: 260px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .hoja-table td{
+    border: 1.5px solid #bcd9d6;
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .hoja-table td.label-cell{
+    background: #cdeeea;
+    font-weight: 700;
+    color: #1f3a37;
+    width: 42%;
+  }
+
+  .hoja-table td.value-cell{
+    background: #e7f7f5;
+    text-align:center;
+    color: #2a2a2a;
+  }
+
+  .hoja-photo{
+    width: 190px;
+    height: 220px;
+    border-radius: 10px;
+    overflow:hidden;
+    background: #f1eee7;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    font-size: 40px;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+
+  .hoja-photo img{
+    width:100%; height:100%; object-fit:cover;
+  }
+
+  .hoja-comentarios{
+    margin-top: 22px;
+  }
+
+  .hoja-comentarios h3{
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    color: #1f3a37;
+    background: #cdeeea;
+    display:inline-block;
+    padding: 5px 14px;
+    border-radius: 8px;
+  }
+
+  .hoja-comentarios textarea{
+    width: 100%;
+    min-height: 80px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+  }
+
+  .comment-log{
+    margin-top: 10px;
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+    max-height: 140px;
+    overflow-y:auto;
+  }
+
+  .comment-entry{
+    font-size: 12.5px;
+    background: #f7f5f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--ink);
+  }
+  .comment-entry .c-date{
+    color: var(--ink-soft);
+    font-size: 11px;
+    display:block;
+    margin-bottom:2px;
+  }
+
+  .hoja-actions{
+    display:flex; gap:10px; margin-top:18px;
+  }
+
+  /* ---- Atrasos / Salidas / Horas a favor module ---- */
+  .section-band{
+    background: var(--celeste);
+    color: #fff;
+    font-weight: 800;
+    text-align:center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    margin: 22px 0 14px 0;
+  }
+
+  .section-band.section-band-sub{
+    background: var(--lav-deep);
+  }
+  .section-band:first-child{ margin-top:0; }
+
+  .section-band.section-band-perfil{
+    background: var(--peach-deep);
+  }
+  .section-band.section-band-perfil-sub{
+    background: var(--butter-deep);
+  }
+
+  .section-band.section-band-reporte{
+    background: #3a3f6b;
+  }
+
+  .tab-btn-reporte{
+    background: #d7d9ee;
+    color: #34366b;
+  }
+  .tab-btn-reporte:hover{
+    background: #3a3f6b;
+    color: #fff;
+  }
+  .tab-btn-reporte.active{
+    background: #fff;
+    color: var(--ink);
+    border-bottom: 3px solid #3a3f6b;
+  }
+
+  .rep-mode-switch{
+    display:flex;
+    gap: 6px;
+    flex-wrap:wrap;
+    margin-bottom: 6px;
+  }
+  .rep-mode-btn.active{
+    background: #3a3f6b;
+    color:#fff;
+    border-color:#3a3f6b;
+  }
+
+  .rep-header-table{
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .rep-header-table td{ padding: 5px 8px; }
+  .rep-h-label{ font-weight:700; color: var(--ink-soft); text-align:right; white-space:nowrap; }
+  .rep-header-table input{
+    padding: 6px 9px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    font-size: 13px;
+    font-family: inherit;
+    width: 170px;
+  }
+
+  .rep-table-wrap{
+    overflow-x:auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .rep-table{
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+  }
+  .rep-table th{
+    background: #3a3f6b;
+    color:#fff;
+    padding: 8px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    position: sticky;
+    top:0;
+  }
+  .rep-table td{
+    border: 1px solid var(--line);
+    padding: 4px 5px;
+    vertical-align: middle;
+  }
+  .rep-table input, .rep-table select{
+    width: 100%;
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+  .rep-table input:hover, .rep-table select:hover,
+  .rep-table input:focus, .rep-table select:focus{
+    border-color: var(--line);
+    background: #fff;
+    outline: none;
+  }
+
+  .rep-piazza-band td{
+    font-weight: 800;
+    text-align:center;
+    color: #fff;
+    padding: 8px;
+    text-transform: uppercase;
+    font-size: 12.5px;
+  }
+
+  .rep-del-row, .rep-del-piazza{
+    border:none;
+    background:none;
+    color: var(--peach-deep);
+    cursor:pointer;
+    font-size: 13px;
+  }
+
+  .rep-impacto-favor{ color: var(--favor); font-weight:800; text-align:center; }
+  .rep-impacto-contra{ color: var(--contra); font-weight:800; text-align:center; }
+
+  .rep-totales-cards{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 10px;
+  }
+
+  .perfil-photo{
+    width: 130px;
+    height: 155px;
+    border-radius: 14px;
+    background: #f1eee7;
+    border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    font-size: 36px;
+    color: var(--ink-soft);
+    flex-shrink:0;
+  }
+  .perfil-photo img{ width:100%; height:100%; object-fit:cover; }
+
+  .perfil-header{
+    display:flex;
+    gap: 22px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    margin-bottom: 6px;
+  }
+
+  .perfil-info-table{
+    flex: 1;
+    min-width: 260px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .perfil-info-table td{
+    border: 1.5px solid #f0dcae;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .perfil-info-table td.label-cell{
+    background: #f7ecc9;
+    font-weight: 700;
+    color: #6b4e14;
+    width: 40%;
+  }
+  .perfil-info-table td.value-cell{
+    background: #fbf5e4;
+    color: #2a2a2a;
+  }
+
+  .perfil-promedio-badge{
+    display:inline-block;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 15px;
+    margin-top: 10px;
+  }
+
+  .att-filters{
+    display:flex;
+    gap: 18px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+
+  .att-filters .field{ flex: 1; min-width: 180px; }
+
+  .att-photo{
+    width: 110px;
+    height: 130px;
+    border-radius: 12px;
+    background: #f1eee7;
+    border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    font-size: 30px;
+    color: var(--ink-soft);
+    flex-shrink:0;
+  }
+  .att-photo img{ width:100%; height:100%; object-fit:cover; }
+
+  .att-empty-hint{
+    text-align:center;
+    color: var(--ink-soft);
+    padding: 30px 10px;
+    font-size: 13px;
+  }
+
+  .att-form{
+    display:flex;
+    gap: 10px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    margin-bottom: 14px;
+    background: #faf9f6;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .att-form .field{ display:flex; flex-direction:column; gap:4px; }
+  .att-form .field label{ margin:0; font-size:11px; }
+  .att-form .field input, .att-form .field select{
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    font-size: 13px;
+    font-family: inherit;
+    background:#fff;
+  }
+  .att-form .field.grow{ flex: 1; min-width: 140px; }
+
+  .btn-add-row{
+    border:none;
+    background: var(--celeste);
+    color:#fff;
+    font-weight:700;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    cursor:pointer;
+    height: 37px;
+  }
+  .btn-add-row:hover{ background: var(--celeste-deep); }
+
+  .att-table{
+    width:100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+  .att-table th{
+    text-align:left;
+    padding: 8px 10px;
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid var(--line);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .att-table td{
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    overflow-wrap: break-word;
+  }
+  /* Default 5-column layout: Fecha | col2 | col3 | Total | Motivo — used by
+     Atrasos and Salidas, so their columns line up with each other. */
+  .att-table th:nth-child(1), .att-table td:nth-child(1){ width: 13%; }
+  .att-table th:nth-child(2), .att-table td:nth-child(2){ width: 23%; }
+  .att-table th:nth-child(3), .att-table td:nth-child(3){ width: 23%; }
+  .att-table th:nth-child(4), .att-table td:nth-child(4){ width: 12%; }
+  .att-table th:nth-child(5), .att-table td:nth-child(5){ width: 29%; }
+
+  /* 4-column layout: Fecha | Tipo | Horas | Motivo — used by Horas a favor. */
+  .att-table.cols-4 th:nth-child(1), .att-table.cols-4 td:nth-child(1){ width: 15%; }
+  .att-table.cols-4 th:nth-child(2), .att-table.cols-4 td:nth-child(2){ width: 20%; }
+  .att-table.cols-4 th:nth-child(3), .att-table.cols-4 td:nth-child(3){ width: 15%; }
+  .att-table.cols-4 th:nth-child(4), .att-table.cols-4 td:nth-child(4){ width: 50%; }
+
+  /* Editable 6-column layout used by Atrasos/Salidas entry tables: same
+     5 widths as the read-only version, plus a narrow trailing action column. */
+  .att-table.cols-edit6 th:nth-child(1), .att-table.cols-edit6 td:nth-child(1){ width: 12%; }
+  .att-table.cols-edit6 th:nth-child(2), .att-table.cols-edit6 td:nth-child(2){ width: 21%; }
+  .att-table.cols-edit6 th:nth-child(3), .att-table.cols-edit6 td:nth-child(3){ width: 21%; }
+  .att-table.cols-edit6 th:nth-child(4), .att-table.cols-edit6 td:nth-child(4){ width: 11%; }
+  .att-table.cols-edit6 th:nth-child(5), .att-table.cols-edit6 td:nth-child(5){ width: 27%; }
+  .att-table.cols-edit6 th:nth-child(6), .att-table.cols-edit6 td:nth-child(6){ width: 8%; }
+
+  /* Editable Horas a favor table: same 4 widths as read-only, plus action column. */
+  .att-table.cols-horas-edit th:nth-child(1), .att-table.cols-horas-edit td:nth-child(1){ width: 14%; }
+  .att-table.cols-horas-edit th:nth-child(2), .att-table.cols-horas-edit td:nth-child(2){ width: 18%; }
+  .att-table.cols-horas-edit th:nth-child(3), .att-table.cols-horas-edit td:nth-child(3){ width: 14%; }
+  .att-table.cols-horas-edit th:nth-child(4), .att-table.cols-horas-edit td:nth-child(4){ width: 46%; }
+  .att-table.cols-horas-edit th:nth-child(5), .att-table.cols-horas-edit td:nth-child(5){ width: 8%; }
+
+  .att-table .del-row{
+    border:none;
+    background:none;
+    color: var(--peach-deep);
+    cursor:pointer;
+    font-size: 14px;
+  }
+
+  .stat-cards{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .stat-card{
+    background: #faf9f6;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    text-align:center;
+  }
+  .stat-card .num{ font-size: 22px; font-weight:800; }
+  .stat-card .lbl{ font-size: 11.5px; color: var(--ink-soft); margin-top:2px; }
+
+  .balance-badge{
+    display:inline-block;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  .balance-badge.favor{ background: #e2f4e6; color: var(--favor); }
+  .balance-badge.contra{ background: #fbe4e0; color: var(--contra); }
+  .balance-badge.neutro{ background: #f0eee9; color: var(--ink-soft); }
+
+  .att-side{
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+
+  .btn-pdf{
+    border:none;
+    background: var(--celeste);
+    color:#fff;
+    font-weight:700;
+    font-size: 13.5px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn-pdf:hover{ background: var(--celeste-deep); }
+
+  .btn-pdf-small{
+    border:none;
+    background: var(--celeste);
+    color:#fff;
+    font-weight:700;
+    font-size: 12.5px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor:pointer;
+  }
+  .btn-pdf-small:hover{ background: var(--celeste-deep); }
+
+  @media (max-width: 760px){
+    .att-filters{ flex-direction:column; }
+  }
+
+  .calif-table-wrap{
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .calif-table{
+    border-collapse: collapse;
+    font-size: 12px;
+    white-space: nowrap;
+    table-layout: fixed;
+  }
+
+  .calif-table th, .calif-table td{
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    text-align: center;
+  }
+
+  .calif-table thead th{
+    background: var(--celeste);
+    color: #fff;
+    font-size: 11px;
+    text-transform: uppercase;
+    z-index: 1;
+  }
+
+  .calif-mes-th{
+    background: var(--celeste);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calif-semana-th{
+    background: #16233d;
+    color: #fff;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calif-name-th{
+    background: var(--celeste);
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calif-plain-th{
+    background: var(--celeste);
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calif-table td.calif-name-cell, .calif-table th.calif-name-th{
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .calif-table td.calif-info-btn{
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  /* Sticky "Piazza → Info → PDF" columns so they stay visible while scrolling
+     through the 52 week columns. Fixed widths make the left offsets predictable. */
+  .calif-table .calif-col-1{ width: 90px; min-width:90px; max-width:90px; }
+  .calif-table .calif-col-2{ width: 110px; min-width:110px; max-width:110px; }
+  .calif-table .calif-col-3{ width: 110px; min-width:110px; max-width:110px; }
+  .calif-table .calif-col-4{ width: 80px; min-width:80px; max-width:80px; }
+  .calif-table .calif-col-5{ width: 50px; min-width:50px; max-width:50px; }
+  .calif-table .calif-col-6{ width: 50px; min-width:50px; max-width:50px; }
+
+  .calif-table .calif-col-1{ position: sticky; left: 0; z-index: 2; }
+  .calif-table .calif-col-2{ position: sticky; left: 90px; z-index: 2; }
+  .calif-table .calif-col-3{ position: sticky; left: 200px; z-index: 2; }
+  .calif-table .calif-col-4{ position: sticky; left: 310px; z-index: 2; }
+  .calif-table .calif-col-5{ position: sticky; left: 390px; z-index: 2; }
+  .calif-table .calif-col-6{ position: sticky; left: 440px; z-index: 2; }
+
+  .calif-table thead th.calif-col-1, .calif-table thead th.calif-col-2, .calif-table thead th.calif-col-3,
+  .calif-table thead th.calif-col-4, .calif-table thead th.calif-col-5, .calif-table thead th.calif-col-6{ z-index: 3; }
+
+  .calif-table td.calif-col-1,
+  .calif-table td.calif-col-2,
+  .calif-table td.calif-col-3{ background: #fff; }
+  .calif-table td.calif-col-5, .calif-table td.calif-col-6{ background: #fff; }
+
+  .calif-week-cell{
+    cursor: pointer;
+    min-width: 34px;
+    font-weight: 700;
+  }
+  .calif-week-cell:hover{ outline: 2px solid var(--celeste); outline-offset: -2px; }
+
+  .cal-empty{ color: var(--ink-soft); font-weight: 400; cursor:pointer; }
+  .cal-red{ background: #f8d3cb; color: #8a3520; }
+  .cal-yellow{ background: #faedb8; color: #7a5f10; }
+  .cal-green{ background: #cdeed4; color: #1f6b34; }
+
+  .calif-avg-cell{
+    font-weight: 800;
+    min-width: 60px;
+    background: #fff;
+  }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .modal-box, .modal-box *{ visibility:visible; }
+    .modal-box{ position:absolute; top:0; left:0; box-shadow:none; max-height:none; }
+    .modal-close-row, .hoja-actions{ display:none !important; }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+  }
+
+  .empty-state{
+    text-align:center;
+    padding: 50px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-state .big{ font-size: 34px; margin-bottom: 8px; }
+
+  .toast{
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events:none;
+    transition: opacity .25s, transform .25s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 999;
+  }
+  .toast.show{
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .loading-msg{
+    text-align:center;
+    color: var(--ink-soft);
+    padding: 30px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-badge">KN</div>
+      <div>
+        <h1>Reporte del Personal Krause</h1>
+        <p class="subtitle">Krause Negocios · Supervisión de Piazzas</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <button class="btn-mini" id="btn-export-backup">💾 Exportar respaldo</button>
+      <label class="btn-mini" for="input-import-backup" style="cursor:pointer;">📂 Importar respaldo</label>
+      <input type="file" id="input-import-backup" accept="application/json" style="display:none;">
+      <div class="live-pill"><span class="dot"></span> Sincronización en vivo</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-nuevo">Nuevo empleado</button>
+    <button class="tab-btn" data-tab="tab-lista">Personal registrado</button>
+    <button class="tab-btn" data-tab="tab-atrasos">Atrasos vs horas a favor</button>
+    <button class="tab-btn" data-tab="tab-calif">Calificación Semanal</button>
+    <button class="tab-btn tab-btn-perfil" data-tab="tab-perfil">Vista de Perfil de Personal</button>
+    <button class="tab-btn tab-btn-reporte" data-tab="tab-reporte">Reporte Diario de Mantenimiento</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- FORM PANEL -->
+    <div class="panel tab-panel active" id="tab-nuevo">
+      <h2><span class="icon-dot"></span> Nuevo empleado</h2>
+
+      <div class="form-cols">
+        <div class="form-col">
+          <div class="row2">
+            <div>
+              <label for="f-nombres">Nombres</label>
+              <input type="text" id="f-nombres" placeholder="Ej. Ricardo">
+            </div>
+            <div>
+              <label for="f-apellidos">Apellidos</label>
+              <input type="text" id="f-apellidos" placeholder="Ej. Torres">
+            </div>
+          </div>
+
+          <label for="f-dep">Departamento</label>
+          <select id="f-dep">
+            <option value="">Seleccionar...</option>
+            <option>Asistente</option>
+            <option>Monitoreo</option>
+            <option>Mantenimiento</option>
+            <option>Otro</option>
+          </select>
+
+          <label for="f-piazza-enrolado">Piazza donde está enrolado</label>
+          <select id="f-piazza-enrolado">
+            <option value="">Seleccionar...</option>
+            <option>Villa Club</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Villas del Rey</option>
+            <option>Ceibos</option>
+            <option>Bosques</option>
+            <option>Ciudad Celeste</option>
+            <option>Murano</option>
+            <option>Samborondón</option>
+            <option>Belén del Norte</option>
+            <option>Cuadrilla</option>
+            <option>Logística</option>
+            <option>Jardinero</option>
+          </select>
+
+          <label for="f-piazza">Piazza donde trabaja</label>
+          <select id="f-piazza">
+            <option value="">Seleccionar...</option>
+            <option>Villa Club</option>
+            <option>FCG</option>
+            <option>La Joya</option>
+            <option>Villas del Rey</option>
+            <option>Ceibos</option>
+            <option>Bosques</option>
+            <option>Ciudad Celeste</option>
+            <option>Murano</option>
+            <option>Samborondón</option>
+            <option>Belén del Norte</option>
+            <option>Cuadrilla</option>
+            <option>Logística</option>
+            <option>Jardinero</option>
+          </select>
+
+          <div class="row2">
+            <div>
+              <label for="f-nac">Fecha de nacimiento</label>
+              <input type="date" id="f-nac">
+            </div>
+            <div>
+              <label for="f-ingreso">Fecha de ingreso a laborar</label>
+              <input type="date" id="f-ingreso">
+            </div>
+          </div>
+
+          <label>Foto</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="photo-preview">📷</div>
+            <div class="photo-btns">
+              <label class="btn-mini" for="f-foto">Subir foto</label>
+              <input type="file" id="f-foto" accept="image/*">
+              <div class="btn-mini" id="btn-quitar-foto">Quitar foto</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-col">
+          <label for="f-turno-modo">Turno</label>
+          <select id="f-turno-modo">
+            <option value="dias">Por día de la semana</option>
+            <option value="rotativo">Rotativo</option>
+          </select>
+
+          <div id="turno-dias-wrap">
+          <div class="turno-grid">
+            <div class="turno-row" id="turno-row-lunes">
+              <span class="turno-day-label">Lunes</span>
+              <input type="time" class="turno-time" id="f-turno-lunes-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-lunes-salida">
+              <button type="button" class="btn-libre" data-day="lunes">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-martes">
+              <span class="turno-day-label">Martes</span>
+              <input type="time" class="turno-time" id="f-turno-martes-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-martes-salida">
+              <button type="button" class="btn-libre" data-day="martes">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-miercoles">
+              <span class="turno-day-label">Miércoles</span>
+              <input type="time" class="turno-time" id="f-turno-miercoles-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-miercoles-salida">
+              <button type="button" class="btn-libre" data-day="miercoles">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-jueves">
+              <span class="turno-day-label">Jueves</span>
+              <input type="time" class="turno-time" id="f-turno-jueves-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-jueves-salida">
+              <button type="button" class="btn-libre" data-day="jueves">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-viernes">
+              <span class="turno-day-label">Viernes</span>
+              <input type="time" class="turno-time" id="f-turno-viernes-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-viernes-salida">
+              <button type="button" class="btn-libre" data-day="viernes">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-sabado">
+              <span class="turno-day-label">Sábado</span>
+              <input type="time" class="turno-time" id="f-turno-sabado-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-sabado-salida">
+              <button type="button" class="btn-libre" data-day="sabado">Libre</button>
+            </div>
+            <div class="turno-row" id="turno-row-domingo">
+              <span class="turno-day-label">Domingo</span>
+              <input type="time" class="turno-time" id="f-turno-domingo-ingreso">
+              <span class="turno-sep">–</span>
+              <input type="time" class="turno-time" id="f-turno-domingo-salida">
+              <button type="button" class="btn-libre" data-day="domingo">Libre</button>
+            </div>
+          </div>
+          <div class="turno-shortcuts">
+            <span class="btn-mini" id="btn-copiar-lv">Copiar Lunes a Lun-Vie</span>
+            <span class="btn-mini" id="btn-finde-libre">Sáb y Dom = Libre</span>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="err" id="err-msg"></div>
+
+      <div class="form-actions">
+        <button class="btn" id="btn-save">Registrar empleado</button>
+        <button class="btn secondary" id="btn-clear">Limpiar formulario</button>
+      </div>
+    </div>
+
+    <!-- LIST PANEL -->
+    <div class="panel tab-panel" id="tab-lista">
+      <h2><span class="icon-dot"></span> Personal registrado</h2>
+
+      <div class="toolbar">
+        <select id="filter-piazza">
+          <option value="">Todas las Piazzas</option>
+        </select>
+        <select id="filter-dep">
+          <option value="">Todos los departamentos</option>
+          <option>Asistente</option>
+          <option>Monitoreo</option>
+          <option>Mantenimiento</option>
+          <option>Otro</option>
+        </select>
+        <input type="text" class="search" id="search-box" placeholder="Buscar por nombre...">
+        <span class="count-chip" id="count-chip">0 empleados</span>
+      </div>
+
+      <div id="list-area" class="loading-msg">Cargando registros...</div>
+
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-pdf-small" id="btn-export-list-pdf">🖨️ Exportar listado en PDF</button>
+      </div>
+    </div>
+
+    <!-- ATRASOS / SALIDAS / HORAS A FAVOR PANEL -->
+    <div class="panel tab-panel" id="tab-atrasos">
+      <div class="section-band">ATRASOS · SALIDAS ANTES DE TIEMPO · HORAS A FAVOR · COMPORTAMIENTO</div>
+
+      <div class="att-filters">
+        <div class="field">
+          <label for="att-dep">Departamento</label>
+          <select id="att-dep">
+            <option value="">Seleccionar...</option>
+            <option>Asistente</option>
+            <option>Monitoreo</option>
+            <option>Mantenimiento</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="att-piazza">Piazza donde trabaja</label>
+          <select id="att-piazza"><option value="">Seleccionar...</option></select>
+        </div>
+        <div class="field grow">
+          <label for="att-empleado">Trabajador</label>
+          <select id="att-empleado"><option value="">Selecciona departamento y piazza...</option></select>
+        </div>
+        <div class="field">
+          <label for="att-tipo">Tipo</label>
+          <select id="att-tipo">
+            <option value="atrasos">Atrasos</option>
+            <option value="salidas">Salidas antes de tiempo</option>
+            <option value="horas">Horas a favor</option>
+            <option value="comportamiento">Comportamiento</option>
+          </select>
+        </div>
+        <div class="att-photo" id="att-photo">📷</div>
+      </div>
+
+      <div id="att-content">
+        <div class="att-empty-hint">Selecciona un trabajador para ver y registrar sus atrasos, salidas y horas.</div>
+      </div>
+    </div>
+
+    <!-- CALIFICACIÓN SEMANAL PANEL -->
+    <div class="panel tab-panel" id="tab-calif">
+      <div class="section-band">CALIFICACIÓN SEMANAL DEL PERSONAL</div>
+
+      <div class="att-filters" style="margin-bottom:16px;">
+        <div class="field grow">
+          <label for="calif-piazza-filter">Filtrar por Piazza donde trabaja</label>
+          <select id="calif-piazza-filter"><option value="">Todas las Piazzas</option></select>
+        </div>
+      </div>
+
+      <div class="calif-table-wrap">
+        <table class="calif-table" id="calif-table"></table>
+      </div>
+
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-pdf-small" id="btn-export-calif-pdf">🖨️ Exportar informe en PDF</button>
+      </div>
+    </div>
+
+    <!-- VISTA DE PERFIL DE PERSONAL PANEL -->
+    <div class="panel tab-panel" id="tab-perfil">
+      <div class="section-band section-band-perfil">VISTA DE PERFIL DE PERSONAL</div>
+
+      <div class="att-filters">
+        <div class="field">
+          <label for="perfil-piazza">Piazza</label>
+          <select id="perfil-piazza"><option value="">Seleccionar...</option></select>
+        </div>
+        <div class="field grow">
+          <label for="perfil-empleado">Trabajador</label>
+          <select id="perfil-empleado"><option value="">Selecciona una Piazza...</option></select>
+        </div>
+      </div>
+
+      <div id="perfil-content">
+        <div class="att-empty-hint">Selecciona una Piazza y un trabajador para ver su perfil completo.</div>
+      </div>
+    </div>
+
+    <!-- REPORTE DIARIO DE MANTENIMIENTO PANEL -->
+    <div class="panel tab-panel" id="tab-reporte">
+      <div class="section-band section-band-reporte">REPORTE DIARIO DE MANTENIMIENTO</div>
+
+      <div id="rep-mode-buttons" class="rep-mode-switch"></div>
+
+      <div id="rep-fecha-fields">
+        <table class="rep-header-table">
+          <tr>
+            <td class="rep-h-label">Fecha:</td>
+            <td><input type="date" id="rep-fecha"></td>
+            <td class="rep-h-label">Turno:</td>
+            <td><input type="text" id="rep-turno" placeholder="Ej. 08H00-20H00"></td>
+          </tr>
+          <tr>
+            <td class="rep-h-label">Supervisor:</td>
+            <td><input type="text" id="rep-supervisor" value="RISKMNG"></td>
+            <td class="rep-h-label">Operador:</td>
+            <td><input type="text" id="rep-operador" placeholder="Nombre del operador"></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin: 16px 0; display:flex; gap:10px; align-items:center;">
+        <span class="btn-mini" id="btn-add-piazza-rep">＋ Agregar Piazza</span>
+        <span class="btn-mini" id="btn-guardar-rep" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar</span>
+      </div>
+
+      <div class="rep-table-wrap">
+        <table class="rep-table" id="rep-table">
+          <thead>
+            <tr>
+              <th style="width:230px;">Nombres</th>
+              <th style="width:90px;">Ingreso</th>
+              <th style="width:90px;">Salida</th>
+              <th style="width:110px;">Horario</th>
+              <th style="width:150px;">Tipo</th>
+              <th style="width:110px;">Horas</th>
+              <th>Observación</th>
+              <th style="width:90px;">Impacto</th>
+              <th style="width:30px;"></th>
+            </tr>
+          </thead>
+          <tbody id="rep-tbody">
+            <tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Agrega una Piazza para empezar el reporte de este día.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      </div>
+
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-pdf-small" id="btn-export-reporte-pdf">🖨️ Exportar informe en PDF</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="hoja-modal">
+  <div class="modal-box">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-print-hoja">🖨️ Imprimir</div>
+      <div class="btn-mini" id="btn-close-hoja">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title">HOJA DE COMPORTAMIENTO DEL PERSONAL</h2>
+    <div class="hoja-body">
+      <table class="hoja-table" id="hoja-table"></table>
+      <div class="hoja-photo" id="hoja-photo">📷</div>
+    </div>
+    <div class="hoja-comentarios">
+      <h3>Comentarios</h3>
+      <div class="comment-log" id="comment-log"></div>
+      <textarea id="new-comment" placeholder="Escribe una nueva observación..."></textarea>
+      <div class="hoja-actions">
+        <button class="btn-mini" id="btn-add-comment">＋ Agregar comentario</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cal-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-cal">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;" id="cal-modal-title">Calificación</h2>
+    <label>Calificación (0 a 10)</label>
+    <input type="number" min="0" max="10" step="1" id="cal-score" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-size:14px; margin-bottom:12px;">
+    <label>Comentario (obligatorio)</label>
+    <textarea id="cal-comentario" placeholder="Explica el motivo de esta calificación..." style="width:100%; min-height:80px; border-radius:10px; border:1.5px solid var(--line); padding:10px 12px; font-family:inherit; font-size:13px;"></textarea>
+    <div class="err" id="cal-err-msg"></div>
+    <div class="hoja-actions">
+      <button class="btn-mini" id="btn-save-cal">Guardar</button>
+      <button class="btn-mini danger-outline" id="btn-delete-cal" style="display:none;">Eliminar calificación</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="piazza-rep-modal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-piazza-rep">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;">Agregar Piazza al reporte</h2>
+    <label>Piazza</label>
+    <select id="piazza-rep-select" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-size:14px;"></select>
+    <div class="hoja-actions">
+      <button class="btn-mini" id="btn-confirm-piazza-rep">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PIAZZAS = ["Villa Club","FCG","La Joya","Villas del Rey","Ceibos","Bosques","Ciudad Celeste","Murano","Samborondón","Belén del Norte","Cuadrilla","Logística","Jardinero"];
+const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const SEMANAS_POR_MES = [5,4,4,5,4,4,5,4,4,5,4,4]; // sums to 52
+
+function weekMonthLabel(semana){
+  let acc = 0;
+  for(let i = 0; i < SEMANAS_POR_MES.length; i++){
+    acc += SEMANAS_POR_MES[i];
+    if(semana <= acc) return MESES[i];
+  }
+  return '';
+}
+const DIAS = [
+  { key: 'lunes', label: 'Lunes', abr: 'Lun' },
+  { key: 'martes', label: 'Martes', abr: 'Mar' },
+  { key: 'miercoles', label: 'Miércoles', abr: 'Mié' },
+  { key: 'jueves', label: 'Jueves', abr: 'Jue' },
+  { key: 'viernes', label: 'Viernes', abr: 'Vie' },
+  { key: 'sabado', label: 'Sábado', abr: 'Sáb' },
+  { key: 'domingo', label: 'Domingo', abr: 'Dom' }
+];
+const STORAGE_KEY = "empleados-registro";
+let editingId = null;
+let empleados = [];
+let currentFotoData = null; // base64 of photo currently in the form
+let hojaOpenId = null; // employee id currently shown in the "hoja" modal
+
+// Populate piazza filter
+const filterPiazzaSel = document.getElementById('filter-piazza');
+PIAZZAS.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = p;
+  filterPiazzaSel.appendChild(opt);
+});
+
+// Populate Atrasos y Horas piazza filter
+const attPiazzaSel = document.getElementById('att-piazza');
+PIAZZAS.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = p;
+  attPiazzaSel.appendChild(opt);
+});
+
+// Populate Calificación Semanal piazza filter
+const califPiazzaSel = document.getElementById('calif-piazza-filter');
+PIAZZAS.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = p;
+  califPiazzaSel.appendChild(opt);
+});
+califPiazzaSel.addEventListener('change', renderCalifTable);
+
+// Populate Vista de Perfil de Personal piazza selector
+const perfilPiazzaSel = document.getElementById('perfil-piazza');
+PIAZZAS.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = p;
+  perfilPiazzaSel.appendChild(opt);
+});
+
+function refreshPerfilEmpleadoOptions(){
+  const piazza = perfilPiazzaSel.value;
+  const sel = document.getElementById('perfil-empleado');
+
+  if(!piazza){
+    sel.innerHTML = '<option value="">Selecciona una Piazza...</option>';
+    document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona una Piazza y un trabajador para ver su perfil completo.</div>';
+    return;
+  }
+
+  const matches = empleados.filter(e => e.piazza === piazza);
+  if(matches.length === 0){
+    sel.innerHTML = '<option value="">Sin trabajadores en esa Piazza</option>';
+    document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">No hay trabajadores registrados en esta Piazza.</div>';
+    return;
+  }
+
+  sel.innerHTML = '<option value="">Seleccionar trabajador...</option>' +
+    matches.map(e => `<option value="${e.id}">${e.nombres} ${e.apellidos}</option>`).join('');
+  document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+}
+
+perfilPiazzaSel.addEventListener('change', refreshPerfilEmpleadoOptions);
+document.getElementById('perfil-empleado').addEventListener('change', (e) => {
+  if(e.target.value) renderPerfil(e.target.value);
+  else document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+});
+
+function renderPerfil(empId){
+  const emp = empleados.find(e => e.id === empId);
+  const content = document.getElementById('perfil-content');
+  if(!emp){
+    content.innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+    return;
+  }
+
+  const asis = ensureAsistencia(emp);
+  const promedio = computeAverage(emp);
+  const promCls = promedio === null ? 'neutro' : scoreClass(promedio);
+  const promBadgeCls = promCls === 'cal-red' ? 'contra' : (promCls === 'cal-green' ? 'favor' : (promCls === 'cal-yellow' ? '' : 'neutro'));
+
+  const atrasosRows = asis.atrasos.length
+    ? [...asis.atrasos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const salidasRows = asis.salidas.length
+    ? [...asis.salidas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const comentarios = emp.comentarios || [];
+  const comportamientoHtml = comentarios.length
+    ? [...comentarios].sort((a,b) => (b.createdAt||b.fecha||0) - (a.createdAt||a.fecha||0)).map(c => {
+        if(c.reporte !== undefined){
+          const procLabel = PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '—';
+          const sancionTxt = c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : '';
+          return `
+            <div class="comment-entry" style="display:flex; gap:10px; align-items:flex-start;">
+              ${c.foto ? `<img src="${c.foto}" alt="foto llamado" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : ''}
+              <div><span class="c-date">${formatDate(c.fecha)} · <strong>${procLabel}${sancionTxt}</strong></span>${c.reporte || ''}</div>
+            </div>
+          `;
+        }
+        return `<div class="comment-entry"><span class="c-date">${new Date(c.fecha).toLocaleString('es-EC')}</span>${c.texto}</div>`;
+      }).join('')
+    : '<div class="comment-entry" style="color:var(--ink-soft);">Sin registros.</div>';
+
+  content.innerHTML = `
+    <div class="perfil-header">
+      <table class="perfil-info-table">
+        <tr><td class="label-cell">Departamento:</td><td class="value-cell">${emp.departamento}</td></tr>
+        <tr><td class="label-cell">Piazza (enrolado):</td><td class="value-cell">${emp.piazzaEnrolado || '—'}</td></tr>
+        <tr><td class="label-cell">Piazza (trabaja):</td><td class="value-cell">${emp.piazza || '—'}</td></tr>
+        <tr><td class="label-cell">Apellidos:</td><td class="value-cell">${emp.apellidos}</td></tr>
+        <tr><td class="label-cell">Nombres:</td><td class="value-cell">${emp.nombres}</td></tr>
+        <tr><td class="label-cell">Fecha de nacimiento:</td><td class="value-cell">${formatDate(emp.fechaNacimiento)}</td></tr>
+        <tr><td class="label-cell">Fecha de ingreso:</td><td class="value-cell">${formatDate(emp.fechaIngreso)}</td></tr>
+        <tr><td class="label-cell">Turno:</td><td class="value-cell">${turnoSummary(emp.turno)}</td></tr>
+      </table>
+      <div class="perfil-photo">${emp.foto ? `<img src="${emp.foto}" alt="foto">` : '📷'}</div>
+    </div>
+
+    <div class="perfil-promedio-badge balance-badge ${promCls === 'cal-red' ? 'contra' : promCls === 'cal-green' ? 'favor' : 'neutro'}">
+      Promedio semanal: ${promedio === null ? 'Sin calificaciones' : promedio}
+    </div>
+
+    <div class="section-band section-band-perfil-sub">Atrasos</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${atrasosRows}</tbody></table>
+
+    <div class="section-band section-band-perfil-sub">Salidas antes de tiempo</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${salidasRows}</tbody></table>
+
+    <div class="section-band section-band-perfil-sub">Comportamiento</div>
+    <div class="comment-log" style="max-height:220px;">${comportamientoHtml}</div>
+  `;
+}
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'tab-calif') renderCalifTable();
+    if(btn.dataset.tab === 'tab-reporte') initReporteTab();
+  });
+});
+
+// ---- Atrasos / Salidas / Horas a Favor module ----
+
+let attSelectedId = null;
+let currentCompFotoData = null; // base64 of the "llamado de atención firmado" photo currently in the form
+
+function minutesBetween(horaInicio, horaFin){
+  if(!horaInicio || !horaFin) return 0;
+  const [h1,m1] = horaInicio.split(':').map(Number);
+  const [h2,m2] = horaFin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if(mins < 0) mins += 24*60; // crosses midnight
+  return mins;
+}
+
+function formatMinutes(mins){
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+function decimalHoursToHM(hours){
+  const totalMinutes = Math.round(Math.abs(hours) * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const sign = hours < 0 ? '-' : '';
+  return `${sign}${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+function refreshAttEmployeeOptions(){
+  const dep = document.getElementById('att-dep').value;
+  const piazza = document.getElementById('att-piazza').value;
+  const sel = document.getElementById('att-empleado');
+  const prev = sel.value;
+  sel.innerHTML = '';
+
+  if(!dep || !piazza){
+    sel.innerHTML = '<option value="">Selecciona departamento y piazza...</option>';
+    attSelectedId = null;
+    renderAttContent();
+    return;
+  }
+
+  const matches = empleados.filter(e => e.departamento === dep && e.piazza === piazza);
+  if(matches.length === 0){
+    sel.innerHTML = '<option value="">Sin trabajadores en esa selección</option>';
+    attSelectedId = null;
+    renderAttContent();
+    return;
+  }
+
+  sel.innerHTML = '<option value="">Seleccionar trabajador...</option>' +
+    matches.map(e => `<option value="${e.id}">${e.nombres} ${e.apellidos}</option>`).join('');
+
+  if(matches.some(e => e.id === prev)){
+    sel.value = prev;
+    attSelectedId = prev;
+  } else {
+    attSelectedId = null;
+  }
+  renderAttContent();
+}
+
+document.getElementById('att-dep').addEventListener('change', refreshAttEmployeeOptions);
+document.getElementById('att-piazza').addEventListener('change', refreshAttEmployeeOptions);
+document.getElementById('att-empleado').addEventListener('change', (e) => {
+  attSelectedId = e.target.value || null;
+  renderAttContent();
+});
+document.getElementById('att-tipo').addEventListener('change', renderAttContent);
+
+function getAttEmpleado(){
+  return empleados.find(e => e.id === attSelectedId) || null;
+}
+
+function ensureAsistencia(emp){
+  if(!emp.asistencia) emp.asistencia = { atrasos: [], salidas: [], horas: [] };
+  if(!emp.asistencia.atrasos) emp.asistencia.atrasos = [];
+  if(!emp.asistencia.salidas) emp.asistencia.salidas = [];
+  if(!emp.asistencia.horas) emp.asistencia.horas = [];
+  return emp.asistencia;
+}
+
+// ---- Calificación Semanal module ----
+
+let calModalEmpId = null;
+let calModalSemana = null;
+
+function getCalificacion(emp, semana){
+  return (emp.calificaciones || []).find(c => c.semana === semana) || null;
+}
+
+function scoreClass(score){
+  if(score === null || score === undefined) return '';
+  if(score <= 6) return 'cal-red';
+  if(score <= 8) return 'cal-yellow';
+  return 'cal-green';
+}
+
+function computeAverage(emp){
+  const cals = emp.calificaciones || [];
+  if(cals.length === 0) return null;
+  const sum = cals.reduce((s,c) => s + Number(c.score), 0);
+  return Math.round((sum / cals.length) * 10) / 10;
+}
+
+function renderCalifTable(){
+  const table = document.getElementById('calif-table');
+  const piazzaFilter = document.getElementById('calif-piazza-filter').value;
+
+  const filtered = empleados.filter(e => !piazzaFilter || e.piazza === piazzaFilter);
+
+  let mesRow = '<tr><th class="calif-name-th calif-col-1" rowspan="2">Piazza</th><th class="calif-name-th calif-col-2" rowspan="2">Nombres</th><th class="calif-name-th calif-col-3" rowspan="2">Apellidos</th><th class="calif-plain-th calif-col-4" rowspan="2">Promedio</th><th class="calif-plain-th calif-col-5" rowspan="2">Info</th><th class="calif-plain-th calif-col-6" rowspan="2">PDF</th>';
+  MESES.forEach((mes, i) => {
+    mesRow += `<th colspan="${SEMANAS_POR_MES[i]}" class="calif-mes-th">${mes}</th>`;
+  });
+  mesRow += '</tr>';
+
+  let semanaRow = '<tr>';
+  for(let s = 1; s <= 52; s++){
+    semanaRow += `<th class="calif-semana-th" title="Semana ${s}">${s}</th>`;
+  }
+  semanaRow += '</tr>';
+
+  let colgroup = '<colgroup>';
+  colgroup += '<col style="width:90px">';
+  colgroup += '<col style="width:110px">';
+  colgroup += '<col style="width:110px">';
+  colgroup += '<col style="width:80px">';
+  colgroup += '<col style="width:50px">';
+  colgroup += '<col style="width:50px">';
+  for(let s = 1; s <= 52; s++) colgroup += '<col style="width:34px">';
+  colgroup += '</colgroup>';
+
+  const thead = `<thead>${mesRow}${semanaRow}</thead>`;
+
+  let tbody = '<tbody>';
+  if(filtered.length === 0){
+    tbody += `<tr><td colspan="58" style="text-align:center;color:var(--ink-soft);padding:20px;">Sin trabajadores para mostrar.</td></tr>`;
+  } else {
+    filtered.forEach(e => {
+      const avg = computeAverage(e);
+      const avgCls = avg === null ? '' : scoreClass(avg);
+      tbody += `<tr>
+        <td class="calif-name-cell calif-col-1">${e.piazza || '—'}</td>
+        <td class="calif-name-cell calif-col-2">${e.nombres}</td>
+        <td class="calif-name-cell calif-col-3">${e.apellidos}</td>
+        <td class="calif-avg-cell calif-col-4 ${avgCls}">${avg === null ? '—' : avg}</td>
+        <td class="calif-info-btn calif-col-5" data-id="${e.id}" title="Ver foto e información">📄</td>
+        <td class="calif-info-btn calif-col-6" data-id="${e.id}" data-export="1" title="Exportar calificación de este trabajador en PDF">🖨️</td>`;
+      for(let s = 1; s <= 52; s++){
+        const cal = getCalificacion(e, s);
+        if(cal){
+          tbody += `<td class="calif-week-cell ${scoreClass(cal.score)}" data-id="${e.id}" data-semana="${s}" title="${cal.comentario || ''}">${cal.score}</td>`;
+        } else {
+          tbody += `<td class="calif-week-cell cal-empty" data-id="${e.id}" data-semana="${s}">—</td>`;
+        }
+      }
+      tbody += '</tr>';
+    });
+  }
+  tbody += '</tbody>';
+
+  table.innerHTML = colgroup + thead + tbody;
+
+  table.querySelectorAll('.calif-info-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(btn.dataset.export) exportCalifPdfIndividual(btn.dataset.id);
+      else openHoja(btn.dataset.id);
+    });
+  });
+  table.querySelectorAll('.calif-week-cell').forEach(cell => {
+    cell.addEventListener('click', () => openCalModal(cell.dataset.id, Number(cell.dataset.semana)));
+  });
+}
+
+function openCalModal(empId, semana){
+  const emp = empleados.find(e => e.id === empId);
+  if(!emp) return;
+  calModalEmpId = empId;
+  calModalSemana = semana;
+
+  const cal = getCalificacion(emp, semana);
+  document.getElementById('cal-modal-title').textContent = `Semana ${semana} · ${emp.nombres} ${emp.apellidos}`;
+  document.getElementById('cal-score').value = cal ? cal.score : '';
+  document.getElementById('cal-comentario').value = cal ? cal.comentario : '';
+  document.getElementById('cal-err-msg').textContent = '';
+  document.getElementById('btn-delete-cal').style.display = cal ? 'inline-block' : 'none';
+
+  document.getElementById('cal-modal').classList.add('show');
+}
+
+function closeCalModal(){
+  document.getElementById('cal-modal').classList.remove('show');
+  calModalEmpId = null;
+  calModalSemana = null;
+}
+
+document.getElementById('btn-close-cal').addEventListener('click', closeCalModal);
+document.getElementById('cal-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'cal-modal') closeCalModal();
+});
+
+document.getElementById('btn-save-cal').addEventListener('click', async () => {
+  const emp = empleados.find(e => e.id === calModalEmpId);
+  if(!emp) return;
+  const errEl = document.getElementById('cal-err-msg');
+  const score = Number(document.getElementById('cal-score').value);
+  const comentario = document.getElementById('cal-comentario').value.trim();
+
+  if(document.getElementById('cal-score').value === '' || isNaN(score) || score < 0 || score > 10){
+    errEl.textContent = 'Ingresa una calificación válida entre 0 y 10.';
+    return;
+  }
+  if(!comentario){
+    errEl.textContent = 'El comentario es obligatorio.';
+    return;
+  }
+  errEl.textContent = '';
+
+  if(!emp.calificaciones) emp.calificaciones = [];
+  const idx = emp.calificaciones.findIndex(c => c.semana === calModalSemana);
+  const entry = { semana: calModalSemana, score, comentario, createdAt: Date.now() };
+  if(idx !== -1) emp.calificaciones[idx] = entry;
+  else emp.calificaciones.push(entry);
+
+  await saveEmpleados();
+  renderCalifTable();
+  closeCalModal();
+  showToast('Calificación guardada.');
+});
+
+document.getElementById('btn-delete-cal').addEventListener('click', async () => {
+  const emp = empleados.find(e => e.id === calModalEmpId);
+  if(!emp) return;
+  emp.calificaciones = (emp.calificaciones || []).filter(c => c.semana !== calModalSemana);
+  await saveEmpleados();
+  renderCalifTable();
+  closeCalModal();
+  showToast('Calificación eliminada.');
+});
+
+// ---- Reporte Diario de Mantenimiento module ----
+
+const PIAZZA_COLORES = {
+  "Villa Club": "#e0a92e",
+  "FCG": "#9aa3ab",
+  "La Joya": "#2f6b3c",
+  "Villas del Rey": "#4a7ebc",
+  "Ceibos": "#6a9c5e",
+  "Bosques": "#9aa3ab",
+  "Ciudad Celeste": "#1eb8cf",
+  "Murano": "#8fb3d9",
+  "Samborondón": "#d97a3a",
+  "Belén del Norte": "#d9c33a",
+  "Cuadrilla": "#a374c2",
+  "Logística": "#5a6b8c",
+  "Jardinero": "#4c8c5a"
+};
+
+const TIPOS_OBS = ["Atraso","Salida antes de tiempo","Novedad","Permiso","Horas extras","Otros"];
+
+let reportesMantenimiento = [];
+let reportesLoaded = false;
+let reporteActualId = null;
+let reportesSyncLocked = false;
+
+let modoReporte = 'fecha'; // 'fecha' | 'plantilla'
+let plantillasSemanal = [];
+let plantillasLoaded = false;
+let diaSemanaActual = null;
+const DIAS_SEMANA_PLANTILLA = [
+  { key: 'lunes', label: 'Lunes' },
+  { key: 'martes', label: 'Martes' },
+  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'jueves', label: 'Jueves' },
+  { key: 'viernes', label: 'Viernes' },
+  { key: 'sabado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' }
+];
+
+async function loadPlantillasSemanal(){
+  if(reportesSyncLocked) return;
+  try{
+    const result = await window.storage.get('plantillas_semanales', true);
+    const fetched = result ? JSON.parse(result.value) : [];
+    plantillasSemanal = fetched;
+    plantillasLoaded = true;
+  } catch(e){
+    if(!plantillasLoaded){ plantillasSemanal = []; plantillasLoaded = true; }
+  }
+}
+
+async function savePlantillasSemanal(){
+  reportesSyncLocked = true;
+  try{
+    await window.storage.set('plantillas_semanales', JSON.stringify(plantillasSemanal), true);
+  } catch(e){
+    showToast('Error al guardar la plantilla. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    setTimeout(() => { reportesSyncLocked = false; }, 3000);
+  }
+}
+
+async function saveReporteActual(){
+  if(modoReporte === 'plantilla') await savePlantillasSemanal();
+  else await saveReportesMantenimiento();
+}
+
+async function loadReportesMantenimiento(){
+  if(reportesSyncLocked) return;
+  try{
+    const result = await window.storage.get('reportes_mantenimiento', true);
+    const fetched = result ? JSON.parse(result.value) : [];
+    if(reportesSyncLocked) return;
+    reportesMantenimiento = fetched;
+    reportesLoaded = true;
+  } catch(e){
+    if(!reportesLoaded){ reportesMantenimiento = []; reportesLoaded = true; }
+  }
+}
+
+async function saveReportesMantenimiento(){
+  reportesSyncLocked = true;
+  try{
+    await window.storage.set('reportes_mantenimiento', JSON.stringify(reportesMantenimiento), true);
+  } catch(e){
+    showToast('Error al guardar el reporte. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    setTimeout(() => { reportesSyncLocked = false; }, 3000);
+  }
+}
+
+function getReporteActual(){
+  if(modoReporte === 'plantilla'){
+    return plantillasSemanal.find(p => p.dia === diaSemanaActual) || null;
+  }
+  return reportesMantenimiento.find(r => r.id === reporteActualId) || null;
+}
+
+async function initReporteTab(){
+  if(!reportesLoaded) await loadReportesMantenimiento();
+  if(!plantillasLoaded) await loadPlantillasSemanal();
+
+  // Re-entering this tab always starts on today's/current date report;
+  // pick a weekday button below to switch to its fixed weekly template.
+  modoReporte = 'fecha';
+  diaSemanaActual = null;
+
+  const modeBtns = document.getElementById('rep-mode-buttons');
+  if(modeBtns.children.length === 0){
+    modeBtns.innerHTML = DIAS_SEMANA_PLANTILLA.map(d => `<span class="btn-mini rep-mode-btn" data-dia="${d.key}">${d.label}</span>`).join('');
+    modeBtns.querySelectorAll('.rep-mode-btn[data-dia]').forEach(btn => {
+      btn.addEventListener('click', () => activarModoPlantilla(btn.dataset.dia));
+    });
+  }
+
+  const fechaInput = document.getElementById('rep-fecha');
+  if(!fechaInput.value){
+    fechaInput.value = new Date().toISOString().slice(0,10);
+  }
+  cargarOCrearReportePorFecha();
+}
+
+function marcarModoActivoUI(){
+  document.querySelectorAll('.rep-mode-btn').forEach(b => b.classList.remove('active'));
+  if(modoReporte !== 'fecha'){
+    const btn = document.querySelector(`.rep-mode-btn[data-dia="${diaSemanaActual}"]`);
+    if(btn) btn.classList.add('active');
+  }
+}
+
+function activarModoFecha(){
+  modoReporte = 'fecha';
+  diaSemanaActual = null;
+  marcarModoActivoUI();
+  cargarOCrearReportePorFecha();
+}
+
+async function activarModoPlantilla(dia){
+  modoReporte = 'plantilla';
+  diaSemanaActual = dia;
+
+  let plantilla = plantillasSemanal.find(p => p.dia === dia);
+  if(!plantilla){
+    plantilla = { dia, fecha: '', turnoRango: '', supervisor: 'RISKMNG', operador: '', piazzas: [] };
+    plantillasSemanal.push(plantilla);
+    await savePlantillasSemanal();
+  }
+  document.getElementById('rep-fecha').value = plantilla.fecha || '';
+  document.getElementById('rep-turno').value = plantilla.turnoRango || '';
+  document.getElementById('rep-supervisor').value = plantilla.supervisor || 'RISKMNG';
+  document.getElementById('rep-operador').value = plantilla.operador || '';
+  marcarModoActivoUI();
+  renderReporteTable();
+}
+
+function cargarOCrearReportePorFecha(){
+  const fecha = document.getElementById('rep-fecha').value;
+  if(!fecha) return;
+  let rep = reportesMantenimiento.find(r => r.fecha === fecha);
+  if(!rep){
+    rep = {
+      id: 'rep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      fecha,
+      turnoRango: '',
+      supervisor: 'RISKMNG',
+      operador: '',
+      piazzas: [],
+      createdAt: Date.now()
+    };
+    reportesMantenimiento.push(rep);
+  }
+  reporteActualId = rep.id;
+  document.getElementById('rep-turno').value = rep.turnoRango || '';
+  document.getElementById('rep-supervisor').value = rep.supervisor || 'RISKMNG';
+  document.getElementById('rep-operador').value = rep.operador || '';
+  renderReporteTable();
+}
+
+document.getElementById('rep-fecha').addEventListener('change', async (e) => {
+  if(modoReporte === 'plantilla'){
+    const rep = getReporteActual();
+    if(!rep) return;
+    rep.fecha = e.target.value;
+    await saveReporteActual();
+  } else {
+    cargarOCrearReportePorFecha();
+  }
+});
+
+['rep-turno','rep-supervisor','rep-operador'].forEach(id => {
+  document.getElementById(id).addEventListener('change', async (e) => {
+    const rep = getReporteActual();
+    if(!rep) return;
+    const field = id === 'rep-turno' ? 'turnoRango' : (id === 'rep-supervisor' ? 'supervisor' : 'operador');
+    rep[field] = e.target.value;
+    await saveReportesMantenimiento();
+  });
+});
+
+function computeImpacto(fila){
+  const horas = Number(fila.horas) || 0;
+  if(horas <= 0) return { tipo: null, horas: 0 };
+  if(fila.tipo === 'Horas extras') return { tipo: 'favor', horas };
+  if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo') return { tipo: 'contra', horas };
+  return { tipo: null, horas: 0 };
+}
+
+function renderReporteTable(){
+  const rep = getReporteActual();
+  const tbody = document.getElementById('rep-tbody');
+  if(!rep || rep.piazzas.length === 0){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:20px;">Agrega una Piazza para empezar el reporte de este día.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  rep.piazzas.forEach(piazzaGrupo => {
+    const color = PIAZZA_COLORES[piazzaGrupo.nombre] || '#7a8a95';
+    const empleadosDeEstaPiazza = empleados.filter(e => e.piazza === piazzaGrupo.nombre && e.departamento === 'Mantenimiento');
+    html += `<tr class="rep-piazza-band" style="background:${color};"><td colspan="8">${piazzaGrupo.nombre}</td><td><button class="rep-del-piazza" data-piazza-id="${piazzaGrupo.id}" title="Eliminar Piazza">🗑</button></td></tr>`;
+
+    piazzaGrupo.filas.forEach(fila => {
+      const impacto = computeImpacto(fila);
+      const impactoHtml = impacto.tipo === 'favor'
+        ? `<span class="rep-impacto-favor">+${impacto.horas}h</span>`
+        : (impacto.tipo === 'contra' ? `<span class="rep-impacto-contra">-${impacto.horas}h</span>` : '');
+
+      const opcionesNombre = ['<option value="">Seleccionar trabajador...</option>']
+        .concat(empleadosDeEstaPiazza.map(e => `<option value="${e.id}" ${fila.empleadoId === e.id ? 'selected' : ''}>${e.nombres} ${e.apellidos}</option>`))
+        .concat([`<option value="__manual__" ${fila.empleadoId === '__manual__' ? 'selected' : ''}>✏️ Escribir nombre manualmente</option>`])
+        .join('');
+
+      const mostrarNombreManual = fila.empleadoId === '__manual__';
+
+      html += `<tr data-piazza-id="${piazzaGrupo.id}" data-fila-id="${fila.id}">
+        <td>
+          <select class="rep-f" data-campo="empleadoId">${opcionesNombre}</select>
+          ${mostrarNombreManual ? `<input type="text" class="rep-f" data-campo="nombreManual" value="${fila.nombreManual || ''}" placeholder="Nombre" style="margin-top:2px;">` : ''}
+        </td>
+        <td><input type="time" class="rep-f" data-campo="ingreso" value="${fila.ingreso || ''}"></td>
+        <td><input type="time" class="rep-f" data-campo="salida" value="${fila.salida || ''}"></td>
+        <td><input type="text" class="rep-f" data-campo="horario" value="${fila.horario || ''}" placeholder="Horario"></td>
+        <td><select class="rep-f" data-campo="tipo">
+          <option value="">—</option>
+          ${TIPOS_OBS.map(t => `<option value="${t}" ${fila.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select></td>
+        <td>
+          <div style="display:flex; gap:3px;">
+            <select class="rep-f" data-campo="horasH" style="width:50%;">${Array.from({length:25}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasH||0) === n ? 'selected' : ''}>${n}h</option>`).join('')}</select>
+            <select class="rep-f" data-campo="horasM" style="width:50%;">${Array.from({length:60}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasM||0) === n ? 'selected' : ''}>${n}m</option>`).join('')}</select>
+          </div>
+        </td>
+        <td><input type="text" class="rep-f" data-campo="detalle" value="${fila.detalle || ''}" placeholder="Observación"></td>
+        <td>${impactoHtml}</td>
+        <td><button class="rep-del-row" title="Eliminar fila">🗑</button></td>
+      </tr>`;
+    });
+
+    html += `<tr data-piazza-id="${piazzaGrupo.id}"><td colspan="9" style="text-align:left; background:#faf9f6;">
+      <span class="btn-mini rep-add-row" data-piazza-id="${piazzaGrupo.id}">＋ Agregar trabajador</span>
+    </td></tr>`;
+  });
+
+  tbody.innerHTML = html;
+
+  tbody.querySelectorAll('.rep-f').forEach(input => {
+    input.addEventListener('change', onRepFieldChange);
+  });
+  tbody.querySelectorAll('.rep-del-row').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      deleteReporteFila(tr.dataset.piazzaId, tr.dataset.filaId);
+    });
+  });
+  tbody.querySelectorAll('.rep-del-piazza').forEach(btn => {
+    btn.addEventListener('click', () => deleteReportePiazza(btn.dataset.piazzaId));
+  });
+  tbody.querySelectorAll('.rep-add-row').forEach(btn => {
+    btn.addEventListener('click', () => addReporteFila(btn.dataset.piazzaId));
+  });
+}
+
+const DIA_SEMANA_KEYS = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado']; // Date.getDay(): 0=domingo
+
+function getHorarioForEmpleadoFecha(emp, fechaStr){
+  if(!emp || !emp.turno) return '';
+  if(typeof emp.turno === 'string') return emp.turno;
+  if(emp.turno._modo === 'rotativo') return 'Rotativo';
+  if(!fechaStr) return '';
+  const d = new Date(fechaStr + 'T00:00:00');
+  const dayKey = DIA_SEMANA_KEYS[d.getDay()];
+  return getHorarioForEmpleadoDiaKey(emp, dayKey);
+}
+
+function getHorarioForEmpleadoDiaKey(emp, dayKey){
+  if(!emp || !emp.turno) return '';
+  if(typeof emp.turno === 'string') return emp.turno;
+  if(emp.turno._modo === 'rotativo') return 'Rotativo';
+  if(!dayKey) return '';
+  const val = emp.turno[dayKey];
+  if(!val) return '';
+  if(typeof val === 'string') return val;
+  if(val.libre) return 'Libre';
+  if(val.ingreso && val.salida) return `${val.ingreso}-${val.salida}`;
+  return '';
+}
+
+function getNombreFila(fila){
+  if(fila.empleadoId === '__manual__') return fila.nombreManual || '';
+  const emp = empleados.find(e => e.id === fila.empleadoId);
+  return emp ? `${emp.nombres} ${emp.apellidos}` : '';
+}
+
+async function onRepFieldChange(e){
+  const tr = e.target.closest('tr');
+  const rep = getReporteActual();
+  if(!rep) return;
+  const piazzaGrupo = rep.piazzas.find(p => p.id === tr.dataset.piazzaId);
+  if(!piazzaGrupo) return;
+  const fila = piazzaGrupo.filas.find(f => f.id === tr.dataset.filaId);
+  if(!fila) return;
+
+  const campo = e.target.dataset.campo;
+
+  if(campo === 'empleadoId'){
+    fila.empleadoId = e.target.value;
+    if(fila.empleadoId && fila.empleadoId !== '__manual__'){
+      const emp = empleados.find(x => x.id === fila.empleadoId);
+      fila.horario = modoReporte === 'plantilla'
+        ? getHorarioForEmpleadoDiaKey(emp, diaSemanaActual)
+        : getHorarioForEmpleadoFecha(emp, rep.fecha);
+    }
+  } else if(campo === 'horasH' || campo === 'horasM'){
+    fila[campo] = Number(e.target.value) || 0;
+    fila.horas = Math.round(((fila.horasH || 0) + (fila.horasM || 0) / 60) * 100) / 100;
+  } else {
+    fila[campo] = e.target.value;
+  }
+
+  await syncFilaToAsistencia(rep, fila);
+  await saveReporteActual();
+  await saveEmpleados();
+  renderReporteTable();
+}
+
+async function syncFilaToAsistencia(rep, fila){
+  // Only actual dated daily reports create real attendance events —
+  // a weekly staffing template is a plan, not something that happened.
+  if(modoReporte !== 'fecha') return;
+
+  const linkId = 'repfila_' + fila.id;
+
+  // Always clear any previous linked entry first, in case the tipo,
+  // employee, or hours changed since the last save.
+  empleados.forEach(e => {
+    if(e.asistencia && e.asistencia.horas){
+      e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+    }
+  });
+
+  if(!fila.empleadoId || fila.empleadoId === '__manual__') return;
+  const emp = empleados.find(e => e.id === fila.empleadoId);
+  if(!emp) return;
+
+  const horas = Number(fila.horas) || 0;
+  if(horas <= 0) return;
+
+  let tipoImpacto = null;
+  if(fila.tipo === 'Horas extras') tipoImpacto = 'favor';
+  else if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo') tipoImpacto = 'contra';
+  if(!tipoImpacto) return;
+
+  const asis = ensureAsistencia(emp);
+  asis.horas.push({
+    id: linkId,
+    fecha: rep.fecha,
+    tipo: tipoImpacto,
+    horas,
+    motivo: `${fila.detalle || fila.tipo} (Reporte diario de mantenimiento)`
+  });
+}
+
+async function addReporteFila(piazzaId){
+  const rep = getReporteActual();
+  if(!rep) return;
+  const piazzaGrupo = rep.piazzas.find(p => p.id === piazzaId);
+  if(!piazzaGrupo) return;
+  piazzaGrupo.filas.push({
+    id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    empleadoId: '', nombreManual: '', ingreso: '', salida: '', horario: '', tipo: '', horasH: 0, horasM: 0, horas: 0, detalle: ''
+  });
+  await saveReporteActual();
+  renderReporteTable();
+}
+
+async function deleteReporteFila(piazzaId, filaId){
+  const rep = getReporteActual();
+  if(!rep) return;
+  const piazzaGrupo = rep.piazzas.find(p => p.id === piazzaId);
+  if(!piazzaGrupo) return;
+  const linkId = 'repfila_' + filaId;
+  empleados.forEach(e => {
+    if(e.asistencia && e.asistencia.horas){
+      e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+    }
+  });
+  piazzaGrupo.filas = piazzaGrupo.filas.filter(f => f.id !== filaId);
+  await saveReporteActual();
+  await saveEmpleados();
+  renderReporteTable();
+}
+
+async function deleteReportePiazza(piazzaId){
+  const rep = getReporteActual();
+  if(!rep) return;
+  rep.piazzas = rep.piazzas.filter(p => p.id !== piazzaId);
+  await saveReporteActual();
+  renderReporteTable();
+}
+
+document.getElementById('btn-add-piazza-rep').addEventListener('click', () => {
+  const sel = document.getElementById('piazza-rep-select');
+  sel.innerHTML = PIAZZAS.map(p => `<option value="${p}">${p}</option>`).join('');
+  document.getElementById('piazza-rep-modal').classList.add('show');
+});
+document.getElementById('btn-close-piazza-rep').addEventListener('click', () => {
+  document.getElementById('piazza-rep-modal').classList.remove('show');
+});
+document.getElementById('piazza-rep-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'piazza-rep-modal') document.getElementById('piazza-rep-modal').classList.remove('show');
+});
+document.getElementById('btn-confirm-piazza-rep').addEventListener('click', async () => {
+  const rep = getReporteActual();
+  if(!rep) return;
+  const nombre = document.getElementById('piazza-rep-select').value;
+  rep.piazzas.push({
+    id: 'piazzarep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    nombre,
+    filas: []
+  });
+  await saveReporteActual();
+  renderReporteTable();
+  document.getElementById('piazza-rep-modal').classList.remove('show');
+  showToast('Piazza agregada al reporte.');
+});
+
+function exportReportePdf(){
+  const rep = getReporteActual();
+  if(!rep || rep.piazzas.length === 0){
+    showToast('No hay datos en este reporte para exportar.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('Reporte Diario de Mantenimiento', 14, 14);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  if(modoReporte === 'plantilla'){
+    const diaLabel = (DIAS_SEMANA_PLANTILLA.find(d => d.key === rep.dia) || {}).label || rep.dia;
+    doc.text(`Plantilla semanal fija: ${diaLabel}`, 14, 20);
+  } else {
+    doc.text(`Fecha: ${formatDate(rep.fecha)}    Turno: ${rep.turnoRango || '-'}`, 14, 20);
+    doc.text(`Supervisor: ${rep.supervisor || '-'}    Operador: ${rep.operador || '-'}`, 14, 25);
+  }
+
+  const body = [];
+  rep.piazzas.forEach(pg => {
+    body.push([{ content: pg.nombre, colSpan: 7, styles: { fillColor: hexToRgb(PIAZZA_COLORES[pg.nombre] || '#7a8a95'), textColor: [255,255,255], fontStyle: 'bold', halign: 'center' } }]);
+    pg.filas.forEach(f => {
+      const imp = computeImpacto(f);
+      const impactoTxt = imp.tipo === 'favor' ? `+${imp.horas}h` : (imp.tipo === 'contra' ? `-${imp.horas}h` : '-');
+      body.push([getNombreFila(f) || '-', f.ingreso || '-', f.salida || '-', f.horario || '-', f.tipo || '-', f.detalle || '-', impactoTxt]);
+    });
+  });
+
+  doc.autoTable({
+    startY: 30,
+    head: [['Nombres','Ingreso','Salida','Horario','Tipo','Observación','Impacto']],
+    body,
+    styles: { fontSize: 7.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [58,63,107] }
+  });
+
+  let favor = 0, contra = 0;
+  rep.piazzas.forEach(pg => pg.filas.forEach(f => {
+    const imp = computeImpacto(f);
+    if(imp.tipo === 'favor') favor += imp.horas;
+    if(imp.tipo === 'contra') contra += imp.horas;
+  }));
+  const neto = Math.round((favor - contra) * 100) / 100;
+
+  const y = doc.lastAutoTable.finalY + 8;
+  doc.setFontSize(10);
+  doc.text(`Balance del día: ${neto}h  (Favor: ${favor}h / En contra: ${contra}h)`, 14, y);
+
+  doc.save(modoReporte === 'plantilla' ? `Plantilla_${rep.dia}.pdf` : `Reporte_Mantenimiento_${rep.fecha}.pdf`);
+}
+
+function hexToRgb(hex){
+  const n = parseInt(hex.replace('#',''), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+document.getElementById('btn-export-reporte-pdf').addEventListener('click', exportReportePdf);
+
+document.getElementById('btn-guardar-rep').addEventListener('click', async () => {
+  await saveReporteActual();
+  showToast(modoReporte === 'plantilla' ? 'Plantilla guardada.' : 'Reporte guardado.');
+});
+
+// ---- Backup export / import ----
+
+document.getElementById('btn-export-backup').addEventListener('click', () => {
+  const payload = {
+    app: 'Registro de Comportamiento de Personal',
+    exportadoEn: new Date().toISOString(),
+    empleados
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `backup_personal_${fecha}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Respaldo exportado.');
+});
+
+document.getElementById('input-import-backup').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    let parsed;
+    try{
+      parsed = JSON.parse(ev.target.result);
+    } catch(err){
+      showToast('El archivo no es un respaldo válido (JSON corrupto).');
+      e.target.value = '';
+      return;
+    }
+    const nuevaLista = Array.isArray(parsed) ? parsed : parsed.empleados;
+    if(!Array.isArray(nuevaLista)){
+      showToast('El archivo no tiene el formato esperado.');
+      e.target.value = '';
+      return;
+    }
+    const confirmado = confirm(
+      `Esto reemplazará TODOS los datos actuales (${empleados.length} registros) por los ${nuevaLista.length} registros del respaldo.\n\n¿Continuar?`
+    );
+    if(!confirmado){
+      e.target.value = '';
+      return;
+    }
+    empleados = nuevaLista;
+    renderList();
+    if(document.getElementById('tab-calif').classList.contains('active')) renderCalifTable();
+    await saveEmpleados();
+    e.target.value = '';
+    showToast('Respaldo importado correctamente.');
+  };
+  reader.readAsText(file);
+});
+
+// ---- Exportar la calificación de UN solo trabajador en PDF ----
+
+function exportCalifPdfIndividual(empId){
+  const emp = empleados.find(e => e.id === empId);
+  if(!emp) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(15);
+  doc.setFont(undefined, 'bold');
+  doc.text('Calificación Semanal del Personal', 14, 16);
+  doc.setFont(undefined, 'normal');
+
+  doc.autoTable({
+    startY: 22,
+    body: [
+      ['Nombres', emp.nombres],
+      ['Apellidos', emp.apellidos],
+      ['Piazza (trabaja)', emp.piazza || '-'],
+      ['Departamento', emp.departamento],
+      ['Promedio general', computeAverage(emp) === null ? '-' : String(computeAverage(emp))]
+    ],
+    theme: 'grid',
+    styles: { fontSize: 9.5, cellPadding: 2.2, lineColor: [255,255,255], lineWidth: 1, valign: 'middle' },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: [20,184,200], textColor: [255,255,255], cellWidth: 48 },
+      1: { fillColor: [214,244,246], textColor: [30,40,40], cellWidth: 75 }
+    },
+    margin: { left: 14, right: 75 }
+  });
+
+  if(emp.foto){
+    try{
+      doc.addImage(emp.foto, 'JPEG', 160, 22, 38, 44);
+    } catch(err){
+      console.error('No se pudo insertar la foto en el PDF:', err);
+    }
+  }
+
+  const body = [];
+  for(let s = 1; s <= 52; s++){
+    const cal = getCalificacion(emp, s);
+    body.push([String(s), weekMonthLabel(s), cal ? String(cal.score) : '-', cal ? (cal.comentario || '-') : '-']);
+  }
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [['Semana','Mes','Calificación','Comentario']],
+    body,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 34 }, 2: { cellWidth: 26, halign: 'center' }, 3: { cellWidth: 'auto' } },
+    didParseCell: (data) => {
+      if(data.section === 'body' && data.column.index === 2){
+        const val = parseFloat(data.cell.raw);
+        if(!isNaN(val)){
+          if(val <= 6) data.cell.styles.fillColor = [248, 211, 203];
+          else if(val <= 8) data.cell.styles.fillColor = [250, 237, 184];
+          else data.cell.styles.fillColor = [205, 238, 212];
+        }
+      }
+    }
+  });
+
+  doc.save(`Calificacion_${emp.nombres}_${emp.apellidos}.pdf`);
+}
+
+// ---- Exportar informe completo de Calificación Semanal en PDF ----
+
+function exportCalifPdf(){
+  const piazzaFilter = document.getElementById('calif-piazza-filter').value;
+  const filtered = empleados.filter(e => !piazzaFilter || e.piazza === piazzaFilter);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('Reporte de Calificación Semanal del Personal', 10, 10);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text(`Piazza: ${piazzaFilter || 'Todas'}    Generado: ${new Date().toLocaleDateString('es-EC')}`, 10, 16);
+
+  const headRow1 = [
+    { content: 'Nombres', rowSpan: 2 },
+    { content: 'Apellidos', rowSpan: 2 },
+    { content: 'Piazza', rowSpan: 2 },
+    { content: 'Prom.', rowSpan: 2 }
+  ];
+  MESES.forEach((mes, i) => headRow1.push({ content: mes, colSpan: SEMANAS_POR_MES[i] }));
+  const headRow2 = [];
+  for(let s = 1; s <= 52; s++) headRow2.push(String(s));
+
+  const body = filtered.map(e => {
+    const avg = computeAverage(e);
+    const row = [e.nombres, e.apellidos, e.piazza || '-', avg === null ? '-' : String(avg)];
+    for(let s = 1; s <= 52; s++){
+      const cal = getCalificacion(e, s);
+      row.push(cal ? String(cal.score) : '-');
+    }
+    return row;
+  });
+
+  const columnStyles = { 0: { cellWidth: 26 }, 1: { cellWidth: 26 }, 2: { cellWidth: 18 }, 3: { cellWidth: 10 } };
+  for(let i = 0; i < 52; i++) columnStyles[4 + i] = { cellWidth: 4.4 };
+
+  doc.autoTable({
+    startY: 21,
+    head: [headRow1, headRow2],
+    body,
+    styles: { fontSize: 5, cellPadding: 0.6, halign: 'center', valign: 'middle' },
+    headStyles: { fillColor: [20,184,200], fontSize: 5.5 },
+    columnStyles,
+    didParseCell: (data) => {
+      if(data.section === 'body' && data.column.index >= 3){
+        const val = parseFloat(data.cell.raw);
+        if(!isNaN(val)){
+          if(val <= 6) data.cell.styles.fillColor = [248, 211, 203];
+          else if(val <= 8) data.cell.styles.fillColor = [250, 237, 184];
+          else data.cell.styles.fillColor = [205, 238, 212];
+        }
+      }
+    }
+  });
+
+  doc.save(`Calificacion_Semanal_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+document.getElementById('btn-export-calif-pdf').addEventListener('click', exportCalifPdf);
+
+function renderAttContent(){
+  const photoEl = document.getElementById('att-photo');
+  const content = document.getElementById('att-content');
+  const emp = getAttEmpleado();
+
+  if(!emp){
+    photoEl.innerHTML = '📷';
+    content.innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver y registrar sus atrasos, salidas y horas.</div>';
+    return;
+  }
+
+  photoEl.innerHTML = emp.foto ? `<img src="${emp.foto}" alt="foto">` : '📷';
+  const asis = ensureAsistencia(emp);
+  const tipo = document.getElementById('att-tipo').value;
+
+  let sectionHtml = '';
+
+  if(tipo === 'atrasos'){
+    sectionHtml = `
+      <div class="section-band">ATRASOS</div>
+      <div class="att-form">
+        <div class="field"><label>Fecha</label><input type="date" id="atr-fecha"></div>
+        <div class="field"><label>Hora que debía ingresar</label><input type="time" id="atr-inicio"></div>
+        <div class="field"><label>Hora que ingresó</label><input type="time" id="atr-fin"></div>
+        <div class="field grow"><label>Motivo</label><input type="text" id="atr-motivo" placeholder="Motivo del atraso"></div>
+        <button class="btn-add-row" id="btn-add-atraso">＋ Agregar</button>
+      </div>
+      <table class="att-table cols-edit6">
+        <thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th><th></th></tr></thead>
+        <tbody id="atrasos-tbody"></tbody>
+      </table>
+    `;
+  } else if(tipo === 'salidas'){
+    sectionHtml = `
+      <div class="section-band">SALIDAS ANTES DE TIEMPO</div>
+      <div class="att-form">
+        <div class="field"><label>Fecha</label><input type="date" id="sal-fecha"></div>
+        <div class="field"><label>Hora que salió</label><input type="time" id="sal-inicio"></div>
+        <div class="field"><label>Hora que debía salir</label><input type="time" id="sal-fin"></div>
+        <div class="field grow"><label>Motivo</label><input type="text" id="sal-motivo" placeholder="Motivo de la salida"></div>
+        <button class="btn-add-row" id="btn-add-salida">＋ Agregar</button>
+      </div>
+      <table class="att-table cols-edit6">
+        <thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th><th></th></tr></thead>
+        <tbody id="salidas-tbody"></tbody>
+      </table>
+    `;
+  } else if(tipo === 'horas'){
+    sectionHtml = `
+      <div class="section-band">HORAS A FAVOR Y EN CONTRA</div>
+      <div class="att-form">
+        <div class="field"><label>Fecha</label><input type="date" id="hor-fecha"></div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="hor-tipo"><option value="favor">A favor</option><option value="contra">En contra</option></select>
+        </div>
+        <div class="field"><label>Horas</label><select id="hor-horas">${Array.from({length:25}, (_,i)=>i).map(n => `<option value="${n}">${n}</option>`).join('')}</select></div>
+        <div class="field"><label>Minutos</label><select id="hor-minutos">${Array.from({length:60}, (_,i)=>i).map(n => `<option value="${n}">${n}</option>`).join('')}</select></div>
+        <div class="field grow"><label>Motivo</label><input type="text" id="hor-motivo" placeholder="Motivo"></div>
+        <button class="btn-add-row" id="btn-add-hora">＋ Agregar</button>
+      </div>
+      <table class="att-table cols-horas-edit">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th><th></th></tr></thead>
+        <tbody id="horas-tbody"></tbody>
+      </table>
+      <div id="balance-area"></div>
+    `;
+  } else if(tipo === 'comportamiento'){
+    sectionHtml = `
+      <div class="section-band">COMPORTAMIENTO</div>
+      <div class="att-form" style="align-items:flex-start;">
+        <div class="field"><label>Fecha</label><input type="date" id="comp-fecha"></div>
+        <div class="field grow"><label>Reporte</label><input type="text" id="comp-reporte" placeholder="Describe lo sucedido..."></div>
+        <div class="field">
+          <label>Procedimiento</label>
+          <select id="comp-procedimiento">
+            <option value="verbal">Llamado de atención verbal</option>
+            <option value="escrito">Llamado de atención escrito</option>
+            <option value="sancion">Memo con sanción económica</option>
+          </select>
+        </div>
+        <div class="field" id="comp-porcentaje-wrap" style="display:none;">
+          <label>Sanción económica</label>
+          <select id="comp-porcentaje">
+            ${Array.from({length:10}, (_,i) => i+1).map(n => `<option value="${n}">${n}%</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Foto del llamado firmado</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="comp-photo-preview">📷</div>
+            <div class="photo-btns">
+              <label class="btn-mini" for="comp-foto">Subir foto</label>
+              <input type="file" id="comp-foto" accept="image/*">
+              <div class="btn-mini" id="comp-quitar-foto">Quitar foto</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-add-row" id="btn-add-comportamiento">＋ Agregar</button>
+      </div>
+      <div class="comment-log" id="att-comment-log" style="max-height:340px;"></div>
+    `;
+  }
+
+  content.innerHTML = `
+    ${sectionHtml}
+
+    <div class="section-band">HISTORIAL DE REPORTES</div>
+    <div id="historial-area"></div>
+
+    <div class="section-band">ESTADÍSTICA</div>
+    <div class="stat-cards" id="stat-cards"></div>
+
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn-pdf-small" id="btn-export-pdf">🖨️ Exportar informe en PDF</button>
+    </div>
+  `;
+
+  if(tipo === 'atrasos'){
+    renderAtrasosTable(asis);
+    document.getElementById('btn-add-atraso').addEventListener('click', () => addAtrasoOrSalida('atrasos', 'atr'));
+  } else if(tipo === 'salidas'){
+    renderSalidasTable(asis);
+    document.getElementById('btn-add-salida').addEventListener('click', () => addAtrasoOrSalida('salidas', 'sal'));
+  } else if(tipo === 'horas'){
+    renderHorasTable(asis);
+    renderBalance(asis);
+    document.getElementById('btn-add-hora').addEventListener('click', addHora);
+  } else if(tipo === 'comportamiento'){
+    renderAttComentarios(emp);
+    currentCompFotoData = null;
+    setCompFotoPreview(null);
+
+    document.getElementById('comp-procedimiento').addEventListener('change', (e) => {
+      document.getElementById('comp-porcentaje-wrap').style.display = e.target.value === 'sancion' ? 'flex' : 'none';
+    });
+    document.getElementById('comp-foto').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      try{
+        const dataUrl = await compressImage(file, 500, 0.75);
+        currentCompFotoData = dataUrl;
+        setCompFotoPreview(dataUrl);
+      } catch(err){
+        showToast('No se pudo procesar la foto.');
+      }
+    });
+    document.getElementById('comp-quitar-foto').addEventListener('click', () => {
+      currentCompFotoData = null;
+      document.getElementById('comp-foto').value = '';
+      setCompFotoPreview(null);
+    });
+    document.getElementById('btn-add-comportamiento').addEventListener('click', addAttComentario);
+  }
+
+  renderHistorial(emp);
+  renderStats(asis, emp);
+  document.getElementById('btn-export-pdf').addEventListener('click', exportAttPdf);
+}
+
+function setCompFotoPreview(dataUrl){
+  const prev = document.getElementById('comp-photo-preview');
+  if(!prev) return;
+  prev.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="foto">` : '📷';
+}
+
+const PROCEDIMIENTO_LABELS = {
+  verbal: 'Llamado de atención verbal',
+  escrito: 'Llamado de atención escrito',
+  sancion: 'Memo con sanción económica'
+};
+
+function renderAttComentarios(emp){
+  const log = document.getElementById('att-comment-log');
+  const comentarios = emp.comentarios || [];
+  if(comentarios.length === 0){
+    log.innerHTML = `<div class="comment-entry" style="color:var(--ink-soft);">Sin observaciones de comportamiento registradas.</div>`;
+    return;
+  }
+  const sorted = [...comentarios].sort((a,b) => (b.createdAt||b.fecha||0) - (a.createdAt||a.fecha||0));
+  log.innerHTML = sorted.map(c => {
+    if(c.reporte !== undefined){
+      // New rich format
+      const procLabel = PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '—';
+      const sancionTxt = c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : '';
+      return `
+        <div class="comment-entry" style="display:flex; gap:10px; align-items:flex-start;">
+          ${c.foto ? `<img src="${c.foto}" alt="foto llamado" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : ''}
+          <div>
+            <span class="c-date">${formatDate(c.fecha)} · <strong>${procLabel}${sancionTxt}</strong></span>
+            ${c.reporte || ''}
+          </div>
+        </div>
+      `;
+    }
+    // Legacy free-text format
+    return `
+      <div class="comment-entry">
+        <span class="c-date">${new Date(c.fecha).toLocaleString('es-EC')}</span>
+        ${c.texto}
+      </div>
+    `;
+  }).join('');
+}
+
+async function addAttComentario(){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const fecha = document.getElementById('comp-fecha').value;
+  const reporte = document.getElementById('comp-reporte').value.trim();
+  const procedimiento = document.getElementById('comp-procedimiento').value;
+  const porcentaje = procedimiento === 'sancion' ? Number(document.getElementById('comp-porcentaje').value) : null;
+
+  if(!fecha || !reporte){
+    showToast('Completa la fecha y el reporte.');
+    return;
+  }
+
+  if(!emp.comentarios) emp.comentarios = [];
+  emp.comentarios.push({
+    id: 'com_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    fecha, reporte, procedimiento, porcentaje,
+    foto: currentCompFotoData,
+    createdAt: Date.now()
+  });
+
+  await saveEmpleados();
+  renderAttContent();
+  showToast('Registro de comportamiento agregado.');
+}
+
+function renderAtrasosTable(asis){
+  const tbody = document.getElementById('atrasos-tbody');
+  if(asis.atrasos.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    return;
+  }
+  const sorted = [...asis.atrasos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  tbody.innerHTML = sorted.map(r => `
+    <tr>
+      <td>${formatDate(r.fecha)}</td>
+      <td>${r.horaInicio || '—'}</td>
+      <td>${r.horaFin || '—'}</td>
+      <td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td>
+      <td>${r.motivo || '—'}</td>
+      <td><button class="del-row" data-id="${r.id}" data-tipo="atrasos">🗑</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
+}
+
+function renderSalidasTable(asis){
+  const tbody = document.getElementById('salidas-tbody');
+  if(asis.salidas.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    return;
+  }
+  const sorted = [...asis.salidas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  tbody.innerHTML = sorted.map(r => `
+    <tr>
+      <td>${formatDate(r.fecha)}</td>
+      <td>${r.horaInicio || '—'}</td>
+      <td>${r.horaFin || '—'}</td>
+      <td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td>
+      <td>${r.motivo || '—'}</td>
+      <td><button class="del-row" data-id="${r.id}" data-tipo="salidas">🗑</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
+}
+
+function renderHorasTable(asis){
+  const tbody = document.getElementById('horas-tbody');
+  if(asis.horas.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    return;
+  }
+  const sorted = [...asis.horas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  tbody.innerHTML = sorted.map(r => `
+    <tr>
+      <td>${formatDate(r.fecha)}</td>
+      <td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td>
+      <td>${r.horas}</td>
+      <td>${r.motivo || '—'}</td>
+      <td><button class="del-row" data-id="${r.id}" data-tipo="horas">🗑</button></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
+}
+
+function autoContraHorasFromAtrasosYSalidas(asis){
+  const atrasoMin = asis.atrasos.reduce((s,r) => s + minutesBetween(r.horaInicio, r.horaFin), 0);
+  const salidaMin = asis.salidas.reduce((s,r) => s + minutesBetween(r.horaInicio, r.horaFin), 0);
+  return Math.round(((atrasoMin + salidaMin) / 60) * 100) / 100;
+}
+
+function computeBalance(asis){
+  const favor = asis.horas.filter(h => h.tipo === 'favor').reduce((s,h) => s + Number(h.horas||0), 0);
+  const contraManual = asis.horas.filter(h => h.tipo === 'contra').reduce((s,h) => s + Number(h.horas||0), 0);
+  const contraAuto = autoContraHorasFromAtrasosYSalidas(asis);
+  const contra = Math.round((contraManual + contraAuto) * 100) / 100;
+  return { favor, contra, contraManual, contraAuto, neto: Math.round((favor - contra) * 100) / 100 };
+}
+
+function renderBalance(asis){
+  const { favor, contra, contraAuto, neto } = computeBalance(asis);
+  const cls = neto > 0 ? 'favor' : (neto < 0 ? 'contra' : 'neutro');
+  document.getElementById('balance-area').innerHTML = `
+    <div class="balance-badge ${cls}">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:6px;">
+      El total en contra se calcula automáticamente cruzando Atrasos + Salidas antes de tiempo (${decimalHoursToHM(contraAuto)}) con las horas en contra registradas manualmente.
+    </div>
+  `;
+}
+
+function renderStats(asis, emp){
+  const { favor, contra, neto } = computeBalance(asis);
+  const comentarios = (emp && emp.comentarios) ? emp.comentarios : [];
+  const cls = neto > 0 ? 'favor' : (neto < 0 ? 'contra' : 'neutro');
+  const balanceEtiqueta = neto > 0 ? 'A favor' : (neto < 0 ? 'En contra' : 'Sin diferencia');
+  document.getElementById('stat-cards').innerHTML = `
+    <div class="stat-card"><div class="num">${asis.atrasos.length}</div><div class="lbl">Atrasos registrados</div></div>
+    <div class="stat-card"><div class="num">${asis.salidas.length}</div><div class="lbl">Salidas anticipadas</div></div>
+    <div class="stat-card"><div class="num">${comentarios.length}</div><div class="lbl">Llamados de atención</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--favor);">${decimalHoursToHM(favor)}</div><div class="lbl">Horas a favor (lo bueno)</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--contra);">${decimalHoursToHM(contra)}</div><div class="lbl">Horas en contra (lo malo)</div></div>
+    <div class="stat-card"><div class="num" style="color:${neto >= 0 ? 'var(--favor)' : 'var(--contra)'};">${decimalHoursToHM(neto)}</div><div class="lbl">Balance final · <strong>${balanceEtiqueta}</strong></div></div>
+  `;
+}
+
+function renderHistorial(emp){
+  const asis = ensureAsistencia(emp);
+  const area = document.getElementById('historial-area');
+  if(!area) return;
+
+  const atrasosRows = asis.atrasos.length
+    ? [...asis.atrasos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const salidasRows = asis.salidas.length
+    ? [...asis.salidas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const horasRows = asis.horas.length
+    ? [...asis.horas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr><td>${formatDate(r.fecha)}</td><td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td><td>${decimalHoursToHM(r.horas)}</td><td>${r.motivo || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const comentarios = emp.comentarios || [];
+  const comportamientoHtml = comentarios.length
+    ? [...comentarios].sort((a,b) => (b.createdAt||b.fecha||0) - (a.createdAt||a.fecha||0)).map(c => {
+        if(c.reporte !== undefined){
+          const procLabel = PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '—';
+          const sancionTxt = c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : '';
+          return `
+            <div class="comment-entry" style="display:flex; gap:10px; align-items:flex-start;">
+              ${c.foto ? `<img src="${c.foto}" alt="foto llamado" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : ''}
+              <div><span class="c-date">${formatDate(c.fecha)} · <strong>${procLabel}${sancionTxt}</strong></span>${c.reporte || ''}</div>
+            </div>
+          `;
+        }
+        return `<div class="comment-entry"><span class="c-date">${new Date(c.fecha).toLocaleString('es-EC')}</span>${c.texto}</div>`;
+      }).join('')
+    : '<div class="comment-entry" style="color:var(--ink-soft);">Sin registros.</div>';
+
+  const { favor, contra, neto } = computeBalance(asis);
+  const cls = neto > 0 ? 'favor' : (neto < 0 ? 'contra' : 'neutro');
+
+  area.innerHTML = `
+    <div class="section-band section-band-sub">Atrasos</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${atrasosRows}</tbody></table>
+
+    <div class="section-band section-band-sub">Salidas antes de tiempo</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${salidasRows}</tbody></table>
+
+    <div class="section-band section-band-sub">Horas a favor y en contra</div>
+    <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th></tr></thead><tbody>${horasRows}</tbody></table>
+    <div class="balance-badge ${cls}">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
+
+    <div class="section-band section-band-sub" style="margin-top:18px;">Comportamiento</div>
+    <div class="comment-log" style="max-height:220px;">${comportamientoHtml}</div>
+  `;
+}
+
+async function addAtrasoOrSalida(tipo, prefix){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const fecha = document.getElementById(prefix + '-fecha').value;
+  const horaInicio = document.getElementById(prefix + '-inicio').value;
+  const horaFin = document.getElementById(prefix + '-fin').value;
+  const motivo = document.getElementById(prefix + '-motivo').value.trim();
+
+  if(!fecha || !horaInicio || !horaFin){
+    showToast('Completa fecha, hora inicio y hora fin.');
+    return;
+  }
+
+  const asis = ensureAsistencia(emp);
+  asis[tipo].push({
+    id: 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    fecha, horaInicio, horaFin, motivo
+  });
+
+  renderList();
+  await saveEmpleados();
+  renderAttContent();
+  showToast('Registro agregado.');
+}
+
+async function addHora(){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const fecha = document.getElementById('hor-fecha').value;
+  const tipo = document.getElementById('hor-tipo').value;
+  const horasParte = Number(document.getElementById('hor-horas').value) || 0;
+  const minutosParte = Number(document.getElementById('hor-minutos').value) || 0;
+  const horas = Math.round((horasParte + minutosParte/60) * 100) / 100;
+  const motivo = document.getElementById('hor-motivo').value.trim();
+
+  if(!fecha || horas <= 0){
+    showToast('Completa fecha y las horas/minutos.');
+    return;
+  }
+
+  const asis = ensureAsistencia(emp);
+  asis.horas.push({
+    id: 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    fecha, tipo, horas, motivo
+  });
+
+  await saveEmpleados();
+  renderAttContent();
+  showToast('Registro agregado.');
+}
+
+async function deleteAttRow(tipo, id){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const asis = ensureAsistencia(emp);
+  asis[tipo] = asis[tipo].filter(r => r.id !== id);
+
+  renderList();
+  await saveEmpleados();
+  renderAttContent();
+  showToast('Registro eliminado.');
+}
+
+function exportAttPdf(){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const asis = ensureAsistencia(emp);
+  const { favor, contra, neto } = computeBalance(asis);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.text('Reporte de Personal', 14, 16);
+  doc.setFont(undefined, 'normal');
+
+  doc.autoTable({
+    startY: 22,
+    body: [
+      ['Nombres', emp.nombres],
+      ['Apellidos', emp.apellidos],
+      ['Departamento', emp.departamento],
+      ['Piazza (enrolado)', emp.piazzaEnrolado || '-'],
+      ['Piazza (trabaja)', emp.piazza || '-'],
+      ['Fecha de nacimiento', formatDate(emp.fechaNacimiento)],
+      ['Fecha de ingreso', formatDate(emp.fechaIngreso)],
+      ['Turno', turnoSummary(emp.turno)]
+    ],
+    theme: 'grid',
+    styles: { fontSize: 9.5, cellPadding: 2.2, lineColor: [255,255,255], lineWidth: 1, valign: 'middle' },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: [20,184,200], textColor: [255,255,255], cellWidth: 48 },
+      1: { fillColor: [214,244,246], textColor: [30,40,40], cellWidth: 75 }
+    },
+    margin: { left: 14, right: 75 }
+  });
+
+  if(emp.foto){
+    try{
+      doc.addImage(emp.foto, 'JPEG', 160, 22, 38, 44);
+    } catch(err){
+      console.error('No se pudo insertar la foto en el PDF:', err);
+    }
+  }
+
+  let y = doc.lastAutoTable.finalY + 12;
+
+  doc.setFontSize(11);
+  doc.text('Atrasos', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Fecha','Hora que debía ingresar','Hora que ingresó','Total','Motivo']],
+    body: asis.atrasos.length
+      ? asis.atrasos.map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
+      : [['-','-','-','-','Sin registros']],
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 36 }, 2: { cellWidth: 36 }, 3: { cellWidth: 24 }, 4: { cellWidth: 64 } },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  doc.text('Salidas antes de tiempo', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Fecha','Hora que salió','Hora que debía salir','Total','Motivo']],
+    body: asis.salidas.length
+      ? asis.salidas.map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
+      : [['-','-','-','-','Sin registros']],
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 36 }, 2: { cellWidth: 36 }, 3: { cellWidth: 24 }, 4: { cellWidth: 64 } },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  doc.text('Horas a favor y en contra', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Fecha','Tipo','Horas','Motivo']],
+    body: asis.horas.length
+      ? asis.horas.map(r => [formatDate(r.fecha), r.tipo === 'favor' ? 'A favor' : 'En contra', decimalHoursToHM(r.horas), r.motivo || '-'])
+      : [['-','-','-','Sin registros']],
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 48 }, 2: { cellWidth: 48 }, 3: { cellWidth: 64 } },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  const comentarios = emp.comentarios || [];
+  doc.text('Comportamiento', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Fecha','Procedimiento','Reporte']],
+    body: comentarios.length
+      ? comentarios.map(c => c.reporte !== undefined
+          ? [formatDate(c.fecha), (PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '-') + (c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : ''), c.reporte || '-']
+          : [new Date(c.fecha).toLocaleDateString('es-EC'), '-', c.texto || '-'])
+      : [['-','-','Sin registros']],
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 96 }, 2: { cellWidth: 64 } },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  doc.setFontSize(11);
+  const balanceEtiquetaPdf = neto > 0 ? 'A FAVOR' : (neto < 0 ? 'EN CONTRA' : 'SIN DIFERENCIA');
+  doc.text(`Balance final: ${decimalHoursToHM(neto)} (${balanceEtiquetaPdf})  —  Favor: ${decimalHoursToHM(favor)} / En contra: ${decimalHoursToHM(contra)}`, 14, y);
+
+  doc.save(`Informe_${emp.nombres}_${emp.apellidos}.pdf`);
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function initials(nombres, apellidos){
+  const a = (nombres||'').trim()[0] || '';
+  const b = (apellidos||'').trim()[0] || '';
+  return (a+b).toUpperCase() || '?';
+}
+
+function formatDate(d){
+  if(!d) return '—';
+  const parts = d.split('-');
+  if(parts.length !== 3) return d;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function isDayLibre(dayKey){
+  const btn = document.querySelector('.btn-libre[data-day="' + dayKey + '"]');
+  return btn ? btn.classList.contains('active') : false;
+}
+
+function setDayLibre(dayKey, libre){
+  const btn = document.querySelector('.btn-libre[data-day="' + dayKey + '"]');
+  const row = document.getElementById('turno-row-' + dayKey);
+  const ingreso = document.getElementById('f-turno-' + dayKey + '-ingreso');
+  const salida = document.getElementById('f-turno-' + dayKey + '-salida');
+  if(btn) btn.classList.toggle('active', libre);
+  if(row) row.classList.toggle('is-libre', libre);
+  if(ingreso){ ingreso.disabled = libre; if(libre) ingreso.value = ''; }
+  if(salida){ salida.disabled = libre; if(libre) salida.value = ''; }
+}
+
+function readTurnoFromForm(){
+  const modo = document.getElementById('f-turno-modo').value;
+  if(modo === 'rotativo'){
+    return { _modo: 'rotativo' };
+  }
+  const turno = { _modo: 'dias' };
+  DIAS.forEach(d => {
+    const libre = isDayLibre(d.key);
+    turno[d.key] = {
+      libre,
+      ingreso: libre ? '' : document.getElementById('f-turno-' + d.key + '-ingreso').value,
+      salida: libre ? '' : document.getElementById('f-turno-' + d.key + '-salida').value
+    };
+  });
+  return turno;
+}
+
+function setTurnoModo(modo){
+  document.getElementById('f-turno-modo').value = modo;
+  document.getElementById('turno-dias-wrap').style.display = modo === 'rotativo' ? 'none' : 'block';
+}
+
+function writeTurnoToForm(turno){
+  if(!turno){
+    setTurnoModo('dias');
+    DIAS.forEach(d => {
+      setDayLibre(d.key, false);
+      document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
+      document.getElementById('f-turno-' + d.key + '-salida').value = '';
+    });
+    return;
+  }
+  if(typeof turno === 'string'){
+    // Legacy free-text turno from before the ingreso/salida grid existed.
+    // Nothing usable to split into times, so just clear the grid; the
+    // original text is still preserved in turnoSummary() for old records
+    // until re-saved.
+    setTurnoModo('dias');
+    DIAS.forEach(d => {
+      setDayLibre(d.key, false);
+      document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
+      document.getElementById('f-turno-' + d.key + '-salida').value = '';
+    });
+    return;
+  }
+  if(turno._modo === 'rotativo'){
+    setTurnoModo('rotativo');
+    return;
+  }
+  setTurnoModo('dias');
+  DIAS.forEach(d => {
+    const val = turno[d.key];
+    if(!val){
+      setDayLibre(d.key, false);
+      document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
+      document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      return;
+    }
+    if(typeof val === 'string'){
+      // Previous per-day free-text format ("08:00-16:00" or "Libre")
+      const isLibre = val.trim().toLowerCase() === 'libre';
+      setDayLibre(d.key, isLibre);
+      document.getElementById('f-turno-' + d.key + '-ingreso').value = '';
+      document.getElementById('f-turno-' + d.key + '-salida').value = '';
+      return;
+    }
+    setDayLibre(d.key, !!val.libre);
+    document.getElementById('f-turno-' + d.key + '-ingreso').value = val.ingreso || '';
+    document.getElementById('f-turno-' + d.key + '-salida').value = val.salida || '';
+  });
+}
+
+function turnoSummary(turno){
+  if(!turno) return '—';
+  if(typeof turno === 'string') return turno || '—';
+  if(turno._modo === 'rotativo') return 'Rotativo';
+
+  const values = DIAS.map(d => {
+    const val = turno[d.key];
+    if(!val) return '';
+    if(typeof val === 'string') return val.trim(); // previous per-day free-text format
+    if(val.libre) return 'Libre';
+    if(val.ingreso && val.salida) return `${val.ingreso}-${val.salida}`;
+    if(val.ingreso || val.salida) return `${val.ingreso || '?'}-${val.salida || '?'}`;
+    return '';
+  });
+  if(values.every(v => !v)) return '—';
+
+  const groups = [];
+  let i = 0;
+  while(i < 7){
+    const val = values[i];
+    let j = i;
+    while(j + 1 < 7 && values[j + 1] === val) j++;
+    groups.push({ from: i, to: j, val });
+    i = j + 1;
+  }
+  const parts = groups.filter(g => g.val).map(g => {
+    const label = g.from === g.to ? DIAS[g.from].abr : `${DIAS[g.from].abr}-${DIAS[g.to].abr}`;
+    return `${label}: ${g.val}`;
+  });
+  return parts.length ? parts.join(' · ') : '—';
+}
+
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height && width > maxDim){
+          height = Math.round(height * (maxDim / width));
+          width = maxDim;
+        } else if(height > maxDim){
+          width = Math.round(width * (maxDim / height));
+          height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function setFotoPreview(dataUrl){
+  const prev = document.getElementById('photo-preview');
+  if(dataUrl){
+    prev.innerHTML = `<img src="${dataUrl}" alt="foto">`;
+  } else {
+    prev.innerHTML = '📷';
+  }
+}
+
+document.getElementById('f-foto').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const dataUrl = await compressImage(file, 400, 0.75);
+    currentFotoData = dataUrl;
+    setFotoPreview(dataUrl);
+  } catch(err){
+    showToast('No se pudo procesar la foto.');
+  }
+});
+
+document.getElementById('f-turno-modo').addEventListener('change', (e) => {
+  document.getElementById('turno-dias-wrap').style.display = e.target.value === 'rotativo' ? 'none' : 'block';
+});
+
+document.getElementById('btn-quitar-foto').addEventListener('click', () => {
+  currentFotoData = null;
+  document.getElementById('f-foto').value = '';
+  setFotoPreview(null);
+});
+
+document.querySelectorAll('.btn-libre').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const day = btn.dataset.day;
+    setDayLibre(day, !isDayLibre(day));
+  });
+});
+
+document.getElementById('btn-copiar-lv').addEventListener('click', () => {
+  const libre = isDayLibre('lunes');
+  const ingreso = document.getElementById('f-turno-lunes-ingreso').value;
+  const salida = document.getElementById('f-turno-lunes-salida').value;
+  ['martes','miercoles','jueves','viernes'].forEach(day => {
+    setDayLibre(day, libre);
+    if(!libre){
+      document.getElementById('f-turno-' + day + '-ingreso').value = ingreso;
+      document.getElementById('f-turno-' + day + '-salida').value = salida;
+    }
+  });
+});
+
+document.getElementById('btn-finde-libre').addEventListener('click', () => {
+  setDayLibre('sabado', true);
+  setDayLibre('domingo', true);
+});
+
+let syncLocked = false; // true while a local save is in flight, to avoid the poll overwriting it
+let hasLoadedOnce = false;
+
+let consecutiveLoadErrors = 0;
+
+async function loadEmpleados(){
+  if(syncLocked) return;
+  try{
+    const result = await window.storage.get(STORAGE_KEY, true);
+    const fetched = result ? JSON.parse(result.value) : [];
+    // A save may have started while this fetch was in flight; if so, discard
+    // this now-stale result instead of clobbering the data that was just saved.
+    if(syncLocked) return;
+    empleados = fetched;
+    hasLoadedOnce = true;
+    consecutiveLoadErrors = 0;
+    renderList();
+    // The Reporte Diario and Vista de Perfil worker dropdowns depend on the
+    // employee list too; refresh them if their tab is currently open so a
+    // newly registered/synced employee doesn't stay missing from view.
+    if(document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
+      renderReporteTable();
+    }
+    if(document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
+      const piazzaSel = document.getElementById('perfil-piazza');
+      if(piazzaSel && piazzaSel.value) refreshPerfilEmpleadoOptions();
+    }
+  } catch(e){
+    // A read failure (missing key on first-ever load, rate limit, transient
+    // server error, etc.) must NEVER wipe what's already on screen.
+    consecutiveLoadErrors++;
+    if(consecutiveLoadErrors === 1 || consecutiveLoadErrors % 5 === 0){
+      // Log occasionally instead of on every single failed poll, to avoid
+      // flooding the console when the backend is having a rough patch.
+      console.error('loadEmpleados error (fallo #' + consecutiveLoadErrors + '):', e);
+    }
+    if(!hasLoadedOnce){
+      // Truly the first load and the key doesn't exist yet -> empty is correct.
+      empleados = [];
+      hasLoadedOnce = true;
+      renderList();
+    }
+    // Otherwise: keep showing whatever is already in memory, untouched.
+  }
+}
+
+async function saveEmpleados(){
+  syncLocked = true;
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(empleados), true);
+  } catch(e){
+    showToast('Error al guardar. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    // Keep the lock a little longer after the write resolves, in case the
+    // shared storage backend takes a moment to propagate before a read
+    // would otherwise see it — avoids a poll clobbering the fresh save.
+    setTimeout(() => { syncLocked = false; }, 3000);
+  }
+}
+
+function renderList(){
+  const area = document.getElementById('list-area');
+  const piazzaFilter = document.getElementById('filter-piazza').value;
+  const depFilter = document.getElementById('filter-dep').value;
+  const search = document.getElementById('search-box').value.toLowerCase().trim();
+
+  let filtered = empleados.filter(e => {
+    if(piazzaFilter && e.piazza !== piazzaFilter) return false;
+    if(depFilter && e.departamento !== depFilter) return false;
+    if(search){
+      const full = (e.nombres + ' ' + e.apellidos).toLowerCase();
+      if(!full.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('count-chip').textContent = `${filtered.length} empleado${filtered.length !== 1 ? 's' : ''}`;
+
+  if(filtered.length === 0){
+    area.className = '';
+    area.innerHTML = `<div class="empty-state"><div class="big">🗂️</div>Sin registros para mostrar.<br>Agrega un empleado desde el formulario.</div>`;
+    return;
+  }
+
+  area.className = 'cards';
+
+  // Group by Departamento, then by Piazza donde trabaja, sorted alphabetically;
+  // within each Piazza, most recently added first.
+  const porDepto = {};
+  filtered.forEach(e => {
+    const dep = e.departamento || 'Otro';
+    const piazza = e.piazza || 'Sin piazza';
+    if(!porDepto[dep]) porDepto[dep] = {};
+    if(!porDepto[dep][piazza]) porDepto[dep][piazza] = [];
+    porDepto[dep][piazza].push(e);
+  });
+
+  const depNames = Object.keys(porDepto).sort((a,b) => a.localeCompare(b));
+
+  let html = '';
+  depNames.forEach(dep => {
+    const piazzasDeDep = porDepto[dep];
+    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => a.localeCompare(b));
+    const totalDep = piazzaNames.reduce((s,p) => s + piazzasDeDep[p].length, 0);
+
+    html += `<div class="group-dep-header dep-${dep}">${dep} <span class="group-count">${totalDep}</span></div>`;
+
+    piazzaNames.forEach(piazza => {
+      const emps = [...piazzasDeDep[piazza]].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+      html += `<div class="group-piazza-header">${piazza} <span class="group-count">${emps.length}</span></div>`;
+      html += emps.map(e => `
+        <div class="emp-card dep-${e.departamento}">
+          <div class="avatar">${e.foto ? `<img src="${e.foto}" alt="foto">` : initials(e.nombres, e.apellidos)}</div>
+          <div class="emp-info">
+            <div class="emp-name">${e.nombres} ${e.apellidos}</div>
+            <div class="emp-meta">
+              <span class="tag dep-${e.departamento}">${e.departamento}</span>
+              <span>📍 Enrolado: ${e.piazzaEnrolado || '—'}</span>
+              <span>🏢 Trabaja: ${e.piazza}</span>
+              <span>🕐 ${turnoSummary(e.turno)}</span>
+              <span>Ingreso: ${formatDate(e.fechaIngreso)}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="icon-btn hoja" data-id="${e.id}" title="Ver hoja">📄</button>
+            <button class="icon-btn edit" data-id="${e.id}" title="Editar">✎</button>
+            <button class="icon-btn del" data-id="${e.id}" title="Eliminar">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    });
+  });
+
+  area.innerHTML = html;
+
+  area.querySelectorAll('.icon-btn.hoja').forEach(btn => {
+    btn.addEventListener('click', () => openHoja(btn.dataset.id));
+  });
+  area.querySelectorAll('.icon-btn.edit').forEach(btn => {
+    btn.addEventListener('click', () => editEmpleado(btn.dataset.id));
+  });
+  area.querySelectorAll('.icon-btn.del').forEach(btn => {
+    btn.addEventListener('click', () => deleteEmpleado(btn.dataset.id));
+  });
+}
+
+function exportListaPdf(){
+  const piazzaFilter = document.getElementById('filter-piazza').value;
+  const depFilter = document.getElementById('filter-dep').value;
+  const search = document.getElementById('search-box').value.toLowerCase().trim();
+
+  const filtered = empleados.filter(e => {
+    if(piazzaFilter && e.piazza !== piazzaFilter) return false;
+    if(depFilter && e.departamento !== depFilter) return false;
+    if(search){
+      const full = (e.nombres + ' ' + e.apellidos).toLowerCase();
+      if(!full.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if(filtered.length === 0){
+    showToast('No hay registros para exportar con estos filtros.');
+    return;
+  }
+
+  const porDepto = {};
+  filtered.forEach(e => {
+    const dep = e.departamento || 'Otro';
+    const piazza = e.piazza || 'Sin piazza';
+    if(!porDepto[dep]) porDepto[dep] = {};
+    if(!porDepto[dep][piazza]) porDepto[dep][piazza] = [];
+    porDepto[dep][piazza].push(e);
+  });
+  const depNames = Object.keys(porDepto).sort((a,b) => a.localeCompare(b));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(15);
+  doc.setFont(undefined, 'bold');
+  doc.text('Listado de Personal Registrado', 14, 16);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text(`Generado: ${new Date().toLocaleDateString('es-EC')}    Total: ${filtered.length} empleados`, 14, 22);
+
+  let y = 30;
+  depNames.forEach(dep => {
+    const piazzasDeDep = porDepto[dep];
+    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => a.localeCompare(b));
+
+    if(y > 270){ doc.addPage(); y = 20; }
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.setFillColor(20,184,200);
+    doc.setTextColor(255,255,255);
+    doc.rect(14, y - 5, 182, 8, 'F');
+    doc.text(dep, 16, y);
+    doc.setTextColor(0,0,0);
+    doc.setFont(undefined, 'normal');
+    y += 8;
+
+    piazzaNames.forEach(piazza => {
+      const emps = piazzasDeDep[piazza];
+      if(y > 270){ doc.addPage(); y = 20; }
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${piazza} (${emps.length})`, 16, y);
+      doc.setFont(undefined, 'normal');
+      y += 5;
+
+      doc.autoTable({
+        startY: y,
+        head: [['Nombres','Apellidos','Turno','Fecha de ingreso']],
+        body: emps.map(e => [e.nombres, e.apellidos, turnoSummary(e.turno), formatDate(e.fechaIngreso)]),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [91,143,176] },
+        margin: { left: 14, right: 14 }
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    });
+  });
+
+  doc.save(`Listado_Personal_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+document.getElementById('btn-export-list-pdf').addEventListener('click', exportListaPdf);
+
+function editEmpleado(id){
+  const e = empleados.find(x => x.id === id);
+  if(!e) return;
+  editingId = id;
+  document.getElementById('f-dep').value = e.departamento;
+  document.getElementById('f-piazza-enrolado').value = e.piazzaEnrolado || '';
+  document.getElementById('f-piazza').value = e.piazza;
+  document.getElementById('f-nombres').value = e.nombres;
+  document.getElementById('f-apellidos').value = e.apellidos;
+  document.getElementById('f-nac').value = e.fechaNacimiento;
+  document.getElementById('f-ingreso').value = e.fechaIngreso;
+  writeTurnoToForm(e.turno);
+  currentFotoData = e.foto || null;
+  setFotoPreview(currentFotoData);
+  document.getElementById('btn-save').textContent = 'Guardar cambios';
+  document.querySelector('.tab-btn[data-tab="tab-nuevo"]').click();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteEmpleado(id){
+  empleados = empleados.filter(x => x.id !== id);
+  renderList();
+  await saveEmpleados();
+  showToast('Empleado eliminado.');
+}
+
+function clearForm(){
+  document.getElementById('f-dep').value = '';
+  document.getElementById('f-piazza-enrolado').value = '';
+  document.getElementById('f-piazza').value = '';
+  document.getElementById('f-nombres').value = '';
+  document.getElementById('f-apellidos').value = '';
+  document.getElementById('f-nac').value = '';
+  document.getElementById('f-ingreso').value = '';
+  writeTurnoToForm(null);
+  document.getElementById('f-foto').value = '';
+  document.getElementById('err-msg').textContent = '';
+  currentFotoData = null;
+  setFotoPreview(null);
+  editingId = null;
+  document.getElementById('btn-save').textContent = 'Registrar empleado';
+}
+
+async function saveEmpleado(){
+  const dep = document.getElementById('f-dep').value;
+  const piazzaEnrolado = document.getElementById('f-piazza-enrolado').value;
+  const piazza = document.getElementById('f-piazza').value;
+  const nombres = document.getElementById('f-nombres').value.trim();
+  const apellidos = document.getElementById('f-apellidos').value.trim();
+  const nac = document.getElementById('f-nac').value;
+  const ingreso = document.getElementById('f-ingreso').value;
+  const turno = readTurnoFromForm();
+  const errEl = document.getElementById('err-msg');
+
+  if(!dep || !piazzaEnrolado || !piazza || !nombres || !apellidos || !nac || !ingreso){
+    errEl.textContent = 'Completa todos los campos obligatorios.';
+    return;
+  }
+  errEl.textContent = '';
+
+  if(editingId){
+    const idx = empleados.findIndex(x => x.id === editingId);
+    if(idx !== -1){
+      empleados[idx] = { ...empleados[idx], departamento: dep, piazzaEnrolado, piazza, nombres, apellidos, fechaNacimiento: nac, fechaIngreso: ingreso, turno, foto: currentFotoData };
+    }
+    showToast('Cambios guardados.');
+  } else {
+    empleados.push({
+      id: 'emp_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      departamento: dep, piazzaEnrolado, piazza, nombres, apellidos,
+      fechaNacimiento: nac, fechaIngreso: ingreso, turno,
+      foto: currentFotoData,
+      comentarios: [],
+      createdAt: Date.now()
+    });
+    showToast('Empleado registrado.');
+  }
+
+  clearForm();
+  renderList();
+  await saveEmpleados();
+  document.querySelector('.tab-btn[data-tab="tab-lista"]').click();
+}
+
+document.getElementById('btn-save').addEventListener('click', saveEmpleado);
+document.getElementById('btn-clear').addEventListener('click', clearForm);
+document.getElementById('filter-piazza').addEventListener('change', renderList);
+document.getElementById('filter-dep').addEventListener('change', renderList);
+document.getElementById('search-box').addEventListener('input', renderList);
+
+// ---- Hoja de Comportamiento del Personal ----
+
+function openHoja(id){
+  const e = empleados.find(x => x.id === id);
+  if(!e) return;
+  hojaOpenId = id;
+
+  document.getElementById('hoja-table').innerHTML = `
+    <tr><td class="label-cell">Departamento:</td><td class="value-cell">${e.departamento}</td></tr>
+    <tr><td class="label-cell">Piazza (enrolado):</td><td class="value-cell">${e.piazzaEnrolado || '—'}</td></tr>
+    <tr><td class="label-cell">Piazza (trabaja):</td><td class="value-cell">${e.piazza || '—'}</td></tr>
+    <tr><td class="label-cell">Apellidos:</td><td class="value-cell">${e.apellidos}</td></tr>
+    <tr><td class="label-cell">Nombres:</td><td class="value-cell">${e.nombres}</td></tr>
+    <tr><td class="label-cell">Fecha de Nacimiento:</td><td class="value-cell">${formatDate(e.fechaNacimiento)}</td></tr>
+    <tr><td class="label-cell">Fecha de Ingreso:</td><td class="value-cell">${formatDate(e.fechaIngreso)}</td></tr>
+    <tr><td class="label-cell">Turno:</td><td class="value-cell">${turnoSummary(e.turno)}</td></tr>
+  `;
+
+  const photoEl = document.getElementById('hoja-photo');
+  photoEl.innerHTML = e.foto ? `<img src="${e.foto}" alt="foto">` : '📷';
+
+  renderComments(e);
+
+  document.getElementById('hoja-modal').classList.add('show');
+}
+
+function renderComments(e){
+  const log = document.getElementById('comment-log');
+  const comentarios = e.comentarios || [];
+  if(comentarios.length === 0){
+    log.innerHTML = `<div class="comment-entry" style="color:var(--ink-soft);">Sin comentarios registrados.</div>`;
+    return;
+  }
+  const sorted = [...comentarios].sort((a,b) => (b.createdAt||b.fecha||0) - (a.createdAt||a.fecha||0));
+  log.innerHTML = sorted.map(c => {
+    if(c.reporte !== undefined){
+      const procLabel = PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '—';
+      const sancionTxt = c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : '';
+      return `
+        <div class="comment-entry" style="display:flex; gap:10px; align-items:flex-start;">
+          ${c.foto ? `<img src="${c.foto}" alt="foto llamado" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : ''}
+          <div>
+            <span class="c-date">${formatDate(c.fecha)} · <strong>${procLabel}${sancionTxt}</strong></span>
+            ${c.reporte || ''}
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="comment-entry">
+        <span class="c-date">${new Date(c.fecha).toLocaleString('es-EC')}</span>
+        ${c.texto}
+      </div>
+    `;
+  }).join('');
+}
+
+function closeHoja(){
+  document.getElementById('hoja-modal').classList.remove('show');
+  hojaOpenId = null;
+  document.getElementById('new-comment').value = '';
+}
+
+document.getElementById('btn-close-hoja').addEventListener('click', closeHoja);
+document.getElementById('hoja-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'hoja-modal') closeHoja();
+});
+document.getElementById('btn-print-hoja').addEventListener('click', () => window.print());
+
+document.getElementById('btn-add-comment').addEventListener('click', async () => {
+  const textarea = document.getElementById('new-comment');
+  const texto = textarea.value.trim();
+  if(!texto || !hojaOpenId) return;
+
+  const idx = empleados.findIndex(x => x.id === hojaOpenId);
+  if(idx === -1) return;
+  if(!empleados[idx].comentarios) empleados[idx].comentarios = [];
+  empleados[idx].comentarios.push({ texto, fecha: Date.now() });
+
+  textarea.value = '';
+  renderComments(empleados[idx]);
+  await saveEmpleados();
+  showToast('Comentario agregado.');
+});
+
+// Poll for live updates so multiple supervisors see changes. Backs off when
+// the shared storage is having errors, instead of hammering it every 4s.
+loadEmpleados();
+function scheduleNextPoll(){
+  const delay = Math.min(4000 * Math.pow(1.6, Math.min(consecutiveLoadErrors, 6)), 60000);
+  setTimeout(async () => {
+    await loadEmpleados();
+    if(hojaOpenId){
+      const e = empleados.find(x => x.id === hojaOpenId);
+      if(e) renderComments(e);
+    }
+    scheduleNextPoll();
+  }, delay);
+}
+scheduleNextPoll();
+
+// ---- Registro del Service Worker (solo en producción, no dentro de Claude) ----
+if('serviceWorker' in navigator && (location.hostname.includes('github.io') || location.hostname.includes('krause'))){
+  navigator.serviceWorker.register('./sw.js').catch((err) => {
+    console.error('No se pudo registrar el Service Worker:', err);
+  });
+
+  let refrescoYaHecho = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(refrescoYaHecho) return;
+    refrescoYaHecho = true;
+    window.location.reload();
+  });
+}
+</script>
+
+</body>
+</html>
