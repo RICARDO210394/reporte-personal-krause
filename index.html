@@ -10,6 +10,46 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+  window.addEventListener('error', (e) => {
+    console.error('Error no capturado:', e.error || e.message, e);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('Promesa rechazada sin capturar:', e.reason);
+  });
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB36bR8kLIVx8VXoXcpYOT5iZG55uJn-e0",
+    authDomain: "comportamiento-personal.firebaseapp.com",
+    projectId: "comportamiento-personal",
+    storageBucket: "comportamiento-personal.firebasestorage.app",
+    messagingSenderId: "749629998733",
+    appId: "1:749629998733:web:1c06e02c4249e6593004c4",
+    measurementId: "G-367ZW5F3J0"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Thin wrapper so the rest of the app can keep the exact same shape it
+  // already used with window.storage: { value: "..." } on get, and throws
+  // on a missing document (matching window.storage's documented behavior).
+  window.storage = {
+    async get(key){
+      const doc = await db.collection('registro_personal_krause').doc(key).get();
+      if(!doc.exists) throw new Error('Documento no encontrado: ' + key);
+      return { key, value: doc.data().value };
+    },
+    async set(key, value){
+      await db.collection('registro_personal_krause').doc(key).set({
+        value,
+        actualizadoEn: Date.now()
+      });
+      return { key, value };
+    }
+  };
+</script>
 <style>
   :root{
     --bg: #f1f4f3;
@@ -45,7 +85,7 @@
     min-height: 100vh;
   }
 
-  .wrap{ max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+  .wrap{ max-width: 1500px; margin: 0 auto; padding: 28px 20px 60px; }
 
   header{
     display:flex;
@@ -419,13 +459,12 @@
   .emp-card{
     border-radius: 14px;
     border: 1.5px solid var(--line);
-    padding: 14px 16px;
+    padding: 16px 18px;
     display:flex;
     align-items:center;
-    gap: 14px;
+    gap: 18px;
     background: #fdfcfb;
     position: relative;
-    overflow:hidden;
   }
 
   .emp-card::before{
@@ -433,6 +472,7 @@
     position:absolute;
     left:0; top:0; bottom:0;
     width: 5px;
+    border-radius: 14px 0 0 14px;
   }
 
   .emp-card.dep-Asistente::before{ background: var(--lav-deep); }
@@ -441,22 +481,22 @@
   .emp-card.dep-Otro::before{ background: var(--butter-deep); }
 
   .avatar{
-    width: 42px; height:42px;
+    width: 52px; height:52px;
     border-radius: 50%;
     background: var(--rose);
     display:flex; align-items:center; justify-content:center;
     font-weight:700; color:#6b5940;
     flex-shrink:0;
-    font-size:14px;
+    font-size:16px;
   }
 
   .emp-info{ flex:1; min-width:0; }
-  .emp-name{ font-weight:700; font-size:14px; }
+  .emp-name{ font-weight:800; font-size:17px; color: var(--ink); line-height: 1.5; }
   .emp-meta{
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-soft);
-    margin-top:3px;
-    display:flex; gap:10px; flex-wrap:wrap;
+    margin-top:5px;
+    display:flex; gap:12px; flex-wrap:wrap;
   }
 
   .tag{
@@ -719,6 +759,45 @@
     background: #fff;
     color: var(--ink);
     border-bottom: 3px solid #3a3f6b;
+  }
+
+  .tab-btn-historial{
+    background: #c9cde8;
+    color: #2b2d55;
+  }
+  .tab-btn-historial:hover{
+    background: #2b2d55;
+    color: #fff;
+  }
+  .tab-btn-historial.active{
+    background: #fff;
+    color: var(--ink);
+    border-bottom: 3px solid #2b2d55;
+  }
+
+  .hist-rep-card{
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap: 10px;
+    background: #faf9f6;
+  }
+  .hist-rep-info{ font-size: 13px; }
+  .hist-rep-info strong{ font-size: 14px; }
+  .hist-rep-meta{ color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+  .hist-rep-actions{ display:flex; gap:6px; }
+
+  .rep-sticky-top{
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel);
+    padding-bottom: 6px;
   }
 
   .rep-mode-switch{
@@ -1069,7 +1148,8 @@
   }
 
   .calif-table-wrap{
-    overflow-x: auto;
+    overflow: auto;
+    max-height: 68vh;
     border: 1px solid var(--line);
     border-radius: 12px;
   }
@@ -1092,8 +1172,14 @@
     color: #fff;
     font-size: 11px;
     text-transform: uppercase;
-    z-index: 1;
+    z-index: 4;
+    position: sticky;
+    height: 34px;
+    box-sizing: border-box;
   }
+
+  .calif-table thead tr:first-child th{ top: 0; }
+  .calif-table thead tr:last-child th{ top: 34px; height: 30px; }
 
   .calif-mes-th{
     background: var(--celeste);
@@ -1117,6 +1203,7 @@
     color: #fff;
     overflow: hidden;
     text-overflow: ellipsis;
+    height: 64px;
   }
 
   .calif-plain-th{
@@ -1124,6 +1211,7 @@
     color: #fff;
     overflow: hidden;
     text-overflow: ellipsis;
+    height: 64px;
   }
 
   .calif-table td.calif-name-cell, .calif-table th.calif-name-th{
@@ -1153,7 +1241,7 @@
   .calif-table .calif-col-6{ position: sticky; left: 440px; z-index: 2; }
 
   .calif-table thead th.calif-col-1, .calif-table thead th.calif-col-2, .calif-table thead th.calif-col-3,
-  .calif-table thead th.calif-col-4, .calif-table thead th.calif-col-5, .calif-table thead th.calif-col-6{ z-index: 3; }
+  .calif-table thead th.calif-col-4, .calif-table thead th.calif-col-5, .calif-table thead th.calif-col-6{ z-index: 6; }
 
   .calif-table td.calif-col-1,
   .calif-table td.calif-col-2,
@@ -1251,6 +1339,7 @@
     <button class="tab-btn" data-tab="tab-calif">Calificación Semanal</button>
     <button class="tab-btn tab-btn-perfil" data-tab="tab-perfil">Vista de Perfil de Personal</button>
     <button class="tab-btn tab-btn-reporte" data-tab="tab-reporte">Reporte Diario de Mantenimiento</button>
+    <button class="tab-btn tab-btn-historial" data-tab="tab-historial-rep">Historial de Reportes</button>
   </div>
 
   <div class="grid">
@@ -1482,12 +1571,24 @@
 
     <!-- CALIFICACIÓN SEMANAL PANEL -->
     <div class="panel tab-panel" id="tab-calif">
-      <div class="section-band">CALIFICACIÓN SEMANAL DEL PERSONAL</div>
+      <div class="rep-sticky-top">
+        <div class="section-band">CALIFICACIÓN SEMANAL DEL PERSONAL</div>
 
-      <div class="att-filters" style="margin-bottom:16px;">
-        <div class="field grow">
-          <label for="calif-piazza-filter">Filtrar por Piazza donde trabaja</label>
-          <select id="calif-piazza-filter"><option value="">Todas las Piazzas</option></select>
+        <div class="att-filters" style="margin-bottom:16px;">
+          <div class="field grow">
+            <label for="calif-piazza-filter">Filtrar por Piazza donde trabaja</label>
+            <select id="calif-piazza-filter"><option value="">Todas las Piazzas</option></select>
+          </div>
+          <div class="field grow">
+            <label for="calif-dep-filter">Filtrar por Departamento</label>
+            <select id="calif-dep-filter">
+              <option value="">Todos los departamentos</option>
+              <option>Asistente</option>
+              <option>Monitoreo</option>
+              <option>Mantenimiento</option>
+              <option>Otro</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -1522,30 +1623,34 @@
 
     <!-- REPORTE DIARIO DE MANTENIMIENTO PANEL -->
     <div class="panel tab-panel" id="tab-reporte">
-      <div class="section-band section-band-reporte">REPORTE DIARIO DE MANTENIMIENTO</div>
+      <div class="rep-sticky-top">
+        <div class="section-band section-band-reporte">REPORTE DIARIO DE MANTENIMIENTO</div>
 
-      <div id="rep-mode-buttons" class="rep-mode-switch"></div>
+        <div id="rep-mode-buttons" class="rep-mode-switch"></div>
 
-      <div id="rep-fecha-fields">
-        <table class="rep-header-table">
-          <tr>
-            <td class="rep-h-label">Fecha:</td>
-            <td><input type="date" id="rep-fecha"></td>
-            <td class="rep-h-label">Turno:</td>
-            <td><input type="text" id="rep-turno" placeholder="Ej. 08H00-20H00"></td>
-          </tr>
-          <tr>
-            <td class="rep-h-label">Supervisor:</td>
-            <td><input type="text" id="rep-supervisor" value="RISKMNG"></td>
-            <td class="rep-h-label">Operador:</td>
-            <td><input type="text" id="rep-operador" placeholder="Nombre del operador"></td>
-          </tr>
-        </table>
-      </div>
+        <div id="rep-fecha-fields">
+          <table class="rep-header-table">
+            <tr>
+              <td class="rep-h-label">Fecha:</td>
+              <td><input type="date" id="rep-fecha"></td>
+              <td class="rep-h-label">Turno:</td>
+              <td><input type="text" id="rep-turno" placeholder="Ej. 08H00-20H00"></td>
+            </tr>
+            <tr>
+              <td class="rep-h-label">Supervisor:</td>
+              <td><input type="text" id="rep-supervisor" value="RISKMNG"></td>
+              <td class="rep-h-label">Operador:</td>
+              <td><input type="text" id="rep-operador" placeholder="Nombre del operador"></td>
+            </tr>
+          </table>
+        </div>
 
-      <div style="margin: 16px 0; display:flex; gap:10px; align-items:center;">
-        <span class="btn-mini" id="btn-add-piazza-rep">＋ Agregar Piazza</span>
-        <span class="btn-mini" id="btn-guardar-rep" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar</span>
+        <div style="margin: 16px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <span class="btn-mini" id="btn-add-piazza-rep">＋ Agregar Piazza</span>
+          <span class="btn-mini" id="btn-guardar-rep" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar</span>
+          <span class="btn-mini" id="btn-enviar-historial" style="background:#3a3f6b; color:#fff; border-color:#3a3f6b;">📤 Enviar al historial</span>
+          <span class="btn-mini" id="btn-limpiar-rep" style="background:var(--peach); color:#7a3a20; border-color:var(--peach-deep);">🧹 Limpiar ingresos/salidas/novedades</span>
+        </div>
       </div>
 
       <div class="rep-table-wrap">
@@ -1569,17 +1674,31 @@
         </table>
       </div>
 
-      </div>
-
       <div style="text-align:center; margin-top:16px;">
         <button class="btn-pdf-small" id="btn-export-reporte-pdf">🖨️ Exportar informe en PDF</button>
       </div>
+    </div>
+
+    <!-- HISTORIAL DE REPORTES PANEL -->
+    <div class="panel tab-panel" id="tab-historial-rep">
+      <div class="section-band" style="background:#3a3f6b;">HISTORIAL DE REPORTES DE MANTENIMIENTO</div>
+      <div id="historial-rep-lista"></div>
     </div>
 
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="historial-rep-modal">
+  <div class="modal-box" style="max-width:900px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-historial-rep">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;" id="historial-rep-modal-title">Reporte archivado</h2>
+    <div id="historial-rep-modal-body"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="hoja-modal">
   <div class="modal-box">
@@ -1687,6 +1806,7 @@ PIAZZAS.forEach(p => {
   califPiazzaSel.appendChild(opt);
 });
 califPiazzaSel.addEventListener('change', renderCalifTable);
+document.getElementById('calif-dep-filter').addEventListener('change', renderCalifTable);
 
 // Populate Vista de Perfil de Personal piazza selector
 const perfilPiazzaSel = document.getElementById('perfil-piazza');
@@ -1805,6 +1925,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById(btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab === 'tab-calif') renderCalifTable();
     if(btn.dataset.tab === 'tab-reporte') initReporteTab();
+    if(btn.dataset.tab === 'tab-historial-rep') initHistorialRepTab();
   });
 });
 
@@ -1916,8 +2037,12 @@ function computeAverage(emp){
 function renderCalifTable(){
   const table = document.getElementById('calif-table');
   const piazzaFilter = document.getElementById('calif-piazza-filter').value;
+  const depFilter = document.getElementById('calif-dep-filter').value;
 
-  const filtered = empleados.filter(e => !piazzaFilter || e.piazza === piazzaFilter);
+  const filtered = empleados.filter(e =>
+    (!piazzaFilter || e.piazza === piazzaFilter) &&
+    (!depFilter || e.departamento === depFilter)
+  );
 
   let mesRow = '<tr><th class="calif-name-th calif-col-1" rowspan="2">Piazza</th><th class="calif-name-th calif-col-2" rowspan="2">Nombres</th><th class="calif-name-th calif-col-3" rowspan="2">Apellidos</th><th class="calif-plain-th calif-col-4" rowspan="2">Promedio</th><th class="calif-plain-th calif-col-5" rowspan="2">Info</th><th class="calif-plain-th calif-col-6" rowspan="2">PDF</th>';
   MESES.forEach((mes, i) => {
@@ -2150,27 +2275,48 @@ function getReporteActual(){
 }
 
 async function initReporteTab(){
-  if(!reportesLoaded) await loadReportesMantenimiento();
-  if(!plantillasLoaded) await loadPlantillasSemanal();
+  // Create the weekday buttons FIRST and unconditionally, so that even if
+  // something below fails (a Firestore hiccup, etc.) the buttons are still
+  // there — this was disappearing before because a failure earlier in this
+  // function was silently stopping everything after it, buttons included.
+  try{
+    const modeBtns = document.getElementById('rep-mode-buttons');
+    if(modeBtns && modeBtns.children.length === 0){
+      modeBtns.innerHTML = DIAS_SEMANA_PLANTILLA.map(d => `<span class="btn-mini rep-mode-btn" data-dia="${d.key}">${d.label}</span>`).join('');
+      modeBtns.querySelectorAll('.rep-mode-btn[data-dia]').forEach(btn => {
+        btn.addEventListener('click', () => activarModoPlantilla(btn.dataset.dia));
+      });
+    }
+  } catch(err){
+    console.error('No se pudieron crear los botones de día:', err);
+  }
 
   // Re-entering this tab always starts on today's/current date report;
   // pick a weekday button below to switch to its fixed weekly template.
   modoReporte = 'fecha';
   diaSemanaActual = null;
 
-  const modeBtns = document.getElementById('rep-mode-buttons');
-  if(modeBtns.children.length === 0){
-    modeBtns.innerHTML = DIAS_SEMANA_PLANTILLA.map(d => `<span class="btn-mini rep-mode-btn" data-dia="${d.key}">${d.label}</span>`).join('');
-    modeBtns.querySelectorAll('.rep-mode-btn[data-dia]').forEach(btn => {
-      btn.addEventListener('click', () => activarModoPlantilla(btn.dataset.dia));
-    });
+  try{
+    if(!reportesLoaded) await loadReportesMantenimiento();
+  } catch(err){
+    console.error('No se pudieron cargar los reportes:', err);
+  }
+  try{
+    if(!plantillasLoaded) await loadPlantillasSemanal();
+  } catch(err){
+    console.error('No se pudieron cargar las plantillas:', err);
   }
 
-  const fechaInput = document.getElementById('rep-fecha');
-  if(!fechaInput.value){
-    fechaInput.value = new Date().toISOString().slice(0,10);
+  try{
+    const fechaInput = document.getElementById('rep-fecha');
+    if(!fechaInput.value){
+      fechaInput.value = new Date().toISOString().slice(0,10);
+    }
+    cargarOCrearReportePorFecha();
+  } catch(err){
+    console.error('No se pudo cargar el reporte de hoy:', err);
+    showToast('Hubo un problema cargando el reporte. Revisa la consola (F12).');
   }
-  cargarOCrearReportePorFecha();
 }
 
 function marcarModoActivoUI(){
@@ -2426,9 +2572,10 @@ async function onRepFieldChange(e){
 }
 
 async function syncFilaToAsistencia(rep, fila){
-  // Only actual dated daily reports create real attendance events —
-  // a weekly staffing template is a plan, not something that happened.
-  if(modoReporte !== 'fecha') return;
+  // Both a dated report and a weekday template can now carry a real Fecha
+  // (the template's Fecha field), so either can create real attendance
+  // events as long as a date has actually been entered.
+  if(!rep.fecha) return;
 
   const linkId = 'repfila_' + fila.id;
 
@@ -2617,6 +2764,190 @@ document.getElementById('btn-guardar-rep').addEventListener('click', async () =>
   showToast(modoReporte === 'plantilla' ? 'Plantilla guardada.' : 'Reporte guardado.');
 });
 
+// ---- Historial de Reportes de Mantenimiento ----
+
+let historialReportes = [];
+let historialReportesLoaded = false;
+
+async function loadHistorialReportes(){
+  if(reportesSyncLocked) return;
+  try{
+    const result = await window.storage.get('historial_reportes', true);
+    historialReportes = result ? JSON.parse(result.value) : [];
+    historialReportesLoaded = true;
+  } catch(e){
+    if(!historialReportesLoaded){ historialReportes = []; historialReportesLoaded = true; }
+  }
+}
+
+async function initHistorialRepTab(){
+  if(!historialReportesLoaded) await loadHistorialReportes();
+  renderHistorialRepLista();
+}
+
+async function saveHistorialReportes(){
+  reportesSyncLocked = true;
+  try{
+    await window.storage.set('historial_reportes', JSON.stringify(historialReportes), true);
+  } catch(e){
+    showToast('Error al guardar el historial. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    setTimeout(() => { reportesSyncLocked = false; }, 3000);
+  }
+}
+
+document.getElementById('btn-enviar-historial').addEventListener('click', async () => {
+  const rep = getReporteActual();
+  if(!rep || rep.piazzas.length === 0){
+    showToast('No hay nada en este reporte todavía para enviar al historial.');
+    return;
+  }
+  if(!historialReportesLoaded) await loadHistorialReportes();
+
+  const origenLabel = modoReporte === 'plantilla'
+    ? (DIAS_SEMANA_PLANTILLA.find(d => d.key === diaSemanaActual) || {}).label || diaSemanaActual
+    : null;
+
+  historialReportes.push({
+    id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    origenTipo: modoReporte,
+    origenDia: origenLabel,
+    fecha: rep.fecha || '',
+    turnoRango: rep.turnoRango || '',
+    supervisor: rep.supervisor || '',
+    operador: rep.operador || '',
+    piazzas: JSON.parse(JSON.stringify(rep.piazzas)),
+    archivadoEn: Date.now()
+  });
+
+  await saveHistorialReportes();
+  showToast('Reporte enviado al historial.');
+});
+
+document.getElementById('btn-limpiar-rep').addEventListener('click', async () => {
+  const rep = getReporteActual();
+  if(!rep || rep.piazzas.length === 0){
+    showToast('No hay nada que limpiar todavía.');
+    return;
+  }
+  const confirmado = confirm('Esto va a borrar Ingreso, Salida, Tipo, Horas y Observación de TODAS las filas de este reporte/plantilla — se conservan los Nombres y el Horario. ¿Continuar?');
+  if(!confirmado) return;
+
+  rep.piazzas.forEach(pg => {
+    pg.filas.forEach(fila => {
+      fila.ingreso = '';
+      fila.salida = '';
+      fila.tipo = '';
+      fila.horas = 0;
+      fila.horasH = 0;
+      fila.horasM = 0;
+      fila.detalle = '';
+      // Also drop whatever real Atrasos/Salidas/Horas a favor entry this
+      // row had linked, since there's nothing left in it to justify one.
+      syncFilaToAsistenciaCleared(fila);
+    });
+  });
+
+  await saveReporteActual();
+  await saveEmpleados();
+  renderReporteTable();
+  showToast('Ingresos, salidas y novedades limpiados. Nombres y horarios se mantuvieron.');
+});
+
+function syncFilaToAsistenciaCleared(fila){
+  const linkId = 'repfila_' + fila.id;
+  empleados.forEach(e => {
+    if(e.asistencia){
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
+    }
+  });
+}
+
+function renderHistorialRepLista(){
+  const area = document.getElementById('historial-rep-lista');
+  if(historialReportes.length === 0){
+    area.innerHTML = '<div class="att-empty-hint">Todavía no se ha enviado ningún reporte al historial. Ve a "Reporte Diario de Mantenimiento" y usa el botón "📤 Enviar al historial".</div>';
+    return;
+  }
+
+  const ordenado = [...historialReportes].sort((a,b) => (b.archivadoEn||0) - (a.archivadoEn||0));
+  area.innerHTML = ordenado.map(h => {
+    const totalFilas = h.piazzas.reduce((s,p) => s + p.filas.length, 0);
+    const origen = h.origenTipo === 'plantilla' ? `Plantilla: ${h.origenDia}` : `Fecha: ${formatDate(h.fecha)}`;
+    return `
+      <div class="hist-rep-card">
+        <div class="hist-rep-info">
+          <strong>${origen}</strong>
+          <div class="hist-rep-meta">Turno: ${h.turnoRango || '—'} · Supervisor: ${h.supervisor || '—'} · Operador: ${h.operador || '—'}</div>
+          <div class="hist-rep-meta">${h.piazzas.length} Piazza(s) · ${totalFilas} trabajador(es) · Enviado: ${new Date(h.archivadoEn).toLocaleString('es-EC')}</div>
+        </div>
+        <div class="hist-rep-actions">
+          <button class="icon-btn" data-id="${h.id}" data-action="ver" title="Ver detalle">👁️</button>
+          <button class="icon-btn del" data-id="${h.id}" data-action="del" title="Eliminar del historial">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  area.querySelectorAll('[data-action="ver"]').forEach(btn => {
+    btn.addEventListener('click', () => verHistorialRepDetalle(btn.dataset.id));
+  });
+  area.querySelectorAll('[data-action="del"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      historialReportes = historialReportes.filter(h => h.id !== btn.dataset.id);
+      await saveHistorialReportes();
+      renderHistorialRepLista();
+      showToast('Eliminado del historial.');
+    });
+  });
+}
+
+function verHistorialRepDetalle(id){
+  const h = historialReportes.find(x => x.id === id);
+  if(!h) return;
+
+  const origen = h.origenTipo === 'plantilla' ? `Plantilla semanal: ${h.origenDia}` : `Fecha: ${formatDate(h.fecha)}`;
+  document.getElementById('historial-rep-modal-title').textContent = origen;
+
+  let bodyHtml = `<div style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">
+    Turno: ${h.turnoRango || '—'} · Supervisor: ${h.supervisor || '—'} · Operador: ${h.operador || '—'}
+  </div>`;
+
+  h.piazzas.forEach(pg => {
+    const color = PIAZZA_COLORES[pg.nombre] || '#7a8a95';
+    bodyHtml += `<div style="background:${color}; color:#fff; font-weight:800; text-align:center; padding:8px; border-radius:10px; margin-bottom:6px; text-transform:uppercase; font-size:12.5px;">${pg.nombre}</div>`;
+    bodyHtml += `<table class="rep-table" style="margin-bottom:16px;">
+      <thead><tr><th>Nombres</th><th>Ingreso</th><th>Salida</th><th>Horario</th><th>Tipo</th><th>Horas</th><th>Observación</th></tr></thead>
+      <tbody>`;
+    pg.filas.forEach(f => {
+      const nombre = f.empleadoId === '__manual__' ? (f.nombreManual || '—') : ((empleados.find(e => e.id === f.empleadoId) || {}).nombres ? `${empleados.find(e => e.id === f.empleadoId).nombres} ${empleados.find(e => e.id === f.empleadoId).apellidos}` : '—');
+      bodyHtml += `<tr>
+        <td>${nombre}</td>
+        <td>${f.ingreso || '—'}</td>
+        <td>${f.salida || '—'}</td>
+        <td>${f.horario || '—'}</td>
+        <td>${f.tipo || '—'}</td>
+        <td>${decimalHoursToHM(f.horas || 0)}</td>
+        <td>${f.detalle || '—'}</td>
+      </tr>`;
+    });
+    bodyHtml += '</tbody></table>';
+  });
+
+  document.getElementById('historial-rep-modal-body').innerHTML = bodyHtml;
+  document.getElementById('historial-rep-modal').classList.add('show');
+}
+
+document.getElementById('btn-close-historial-rep').addEventListener('click', () => {
+  document.getElementById('historial-rep-modal').classList.remove('show');
+});
+document.getElementById('historial-rep-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'historial-rep-modal') document.getElementById('historial-rep-modal').classList.remove('show');
+});
+
 // ---- Backup export / import ----
 
 document.getElementById('btn-export-backup').addEventListener('click', () => {
@@ -2746,7 +3077,11 @@ function exportCalifPdfIndividual(empId){
 
 function exportCalifPdf(){
   const piazzaFilter = document.getElementById('calif-piazza-filter').value;
-  const filtered = empleados.filter(e => !piazzaFilter || e.piazza === piazzaFilter);
+  const depFilter = document.getElementById('calif-dep-filter').value;
+  const filtered = empleados.filter(e =>
+    (!piazzaFilter || e.piazza === piazzaFilter) &&
+    (!depFilter || e.departamento === depFilter)
+  );
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -2756,7 +3091,7 @@ function exportCalifPdf(){
   doc.text('Reporte de Calificación Semanal del Personal', 10, 10);
   doc.setFont(undefined, 'normal');
   doc.setFontSize(9);
-  doc.text(`Piazza: ${piazzaFilter || 'Todas'}    Generado: ${new Date().toLocaleDateString('es-EC')}`, 10, 16);
+  doc.text(`Piazza: ${piazzaFilter || 'Todas'}    Departamento: ${depFilter || 'Todos'}    Generado: ${new Date().toLocaleDateString('es-EC')}`, 10, 16);
 
   const headRow1 = [
     { content: 'Nombres', rowSpan: 2 },
