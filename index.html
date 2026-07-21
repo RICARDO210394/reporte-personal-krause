@@ -1681,6 +1681,7 @@
 
         <div style="margin: 16px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <span class="btn-mini" id="btn-add-piazza-rep">＋ Agregar Piazza</span>
+          <span class="btn-mini" id="btn-copiar-plantilla" style="background:#6a9c5e; color:#fff; border-color:#6a9c5e;">📋 Copiar de otro día</span>
           <span class="btn-mini" id="btn-guardar-rep" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar</span>
           <span class="btn-mini" id="btn-enviar-historial" style="background:#3a3f6b; color:#fff; border-color:#3a3f6b;">📤 Enviar al historial</span>
           <span class="btn-mini" id="btn-limpiar-rep" style="background:var(--peach); color:#7a3a20; border-color:var(--peach-deep);">🧹 Limpiar ingresos/salidas/novedades</span>
@@ -1731,6 +1732,37 @@
     </div>
     <h2 class="hoja-title" style="font-size:16px;" id="historial-rep-modal-title">Reporte archivado</h2>
     <div id="historial-rep-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="copiar-plantilla-modal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-copiar-plantilla">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;">Copiar plantilla de otro día</h2>
+    <p style="font-size:13px; color:var(--ink-soft); margin:6px 0 14px;">
+      Elige de qué día quieres copiar las Piazzas y trabajadores hacia lo que estás viendo ahora.
+      Esto reemplaza lo que ya tengas aquí.
+    </p>
+    <div id="copiar-plantilla-opciones" class="rep-mode-switch"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="export-piazzas-modal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-export-piazzas">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;">¿Qué Piazzas exportar?</h2>
+    <div style="margin:6px 0 12px; display:flex; gap:8px;">
+      <span class="btn-mini" id="btn-export-piazzas-todas">Seleccionar todas</span>
+      <span class="btn-mini" id="btn-export-piazzas-ninguna">Ninguna</span>
+    </div>
+    <div id="export-piazzas-lista" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;"></div>
+    <div style="margin-top:16px; text-align:center;">
+      <button class="btn-pdf-small" id="btn-export-piazzas-confirmar">🖨️ Exportar PDF</button>
+    </div>
   </div>
 </div>
 
@@ -2782,10 +2814,19 @@ document.getElementById('btn-confirm-piazza-rep').addEventListener('click', asyn
   showToast('Piazza agregada al reporte.');
 });
 
-function exportReportePdf(){
+function exportReportePdf(piazzasFiltro){
   const rep = getReporteActual();
   if(!rep || rep.piazzas.length === 0){
     showToast('No hay datos en este reporte para exportar.');
+    return;
+  }
+
+  const piazzasAExportar = piazzasFiltro && piazzasFiltro.length
+    ? rep.piazzas.filter(pg => piazzasFiltro.includes(pg.nombre))
+    : rep.piazzas;
+
+  if(piazzasAExportar.length === 0){
+    showToast('No seleccionaste ninguna Piazza para exportar.');
     return;
   }
 
@@ -2806,7 +2847,7 @@ function exportReportePdf(){
   }
 
   const body = [];
-  rep.piazzas.forEach(pg => {
+  piazzasAExportar.forEach(pg => {
     body.push([{ content: pg.nombre, colSpan: 7, styles: { fillColor: hexToRgb(PIAZZA_COLORES[pg.nombre] || '#7a8a95'), textColor: [255,255,255], fontStyle: 'bold', halign: 'center' } }]);
     pg.filas.forEach(f => {
       const imp = computeImpacto(f);
@@ -2824,7 +2865,7 @@ function exportReportePdf(){
   });
 
   let favor = 0, contra = 0;
-  rep.piazzas.forEach(pg => pg.filas.forEach(f => {
+  piazzasAExportar.forEach(pg => pg.filas.forEach(f => {
     const imp = computeImpacto(f);
     if(imp.tipo === 'favor') favor += imp.horas;
     if(imp.tipo === 'contra') contra += imp.horas;
@@ -2843,7 +2884,40 @@ function hexToRgb(hex){
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-document.getElementById('btn-export-reporte-pdf').addEventListener('click', exportReportePdf);
+document.getElementById('btn-export-reporte-pdf').addEventListener('click', () => {
+  const rep = getReporteActual();
+  if(!rep || rep.piazzas.length === 0){
+    showToast('No hay datos en este reporte para exportar.');
+    return;
+  }
+  const lista = document.getElementById('export-piazzas-lista');
+  lista.innerHTML = rep.piazzas.map(pg => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" class="export-piazza-check" value="${pg.nombre}" checked>
+      ${pg.nombre} <span style="color:var(--ink-soft);">(${pg.filas.length} trabajador${pg.filas.length === 1 ? '' : 'es'})</span>
+    </label>
+  `).join('');
+  document.getElementById('export-piazzas-modal').classList.add('show');
+});
+
+document.getElementById('btn-export-piazzas-todas').addEventListener('click', () => {
+  document.querySelectorAll('.export-piazza-check').forEach(c => c.checked = true);
+});
+document.getElementById('btn-export-piazzas-ninguna').addEventListener('click', () => {
+  document.querySelectorAll('.export-piazza-check').forEach(c => c.checked = false);
+});
+document.getElementById('btn-close-export-piazzas').addEventListener('click', () => {
+  document.getElementById('export-piazzas-modal').classList.remove('show');
+});
+document.getElementById('export-piazzas-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'export-piazzas-modal') document.getElementById('export-piazzas-modal').classList.remove('show');
+});
+document.getElementById('btn-export-piazzas-confirmar').addEventListener('click', () => {
+  const seleccionadas = [...document.querySelectorAll('.export-piazza-check:checked')].map(c => c.value);
+  document.getElementById('export-piazzas-modal').classList.remove('show');
+  exportReportePdf(seleccionadas);
+});
+
 
 document.getElementById('btn-guardar-rep').addEventListener('click', async () => {
   await saveReporteActual();
@@ -3034,6 +3108,86 @@ document.getElementById('btn-close-historial-rep').addEventListener('click', () 
 document.getElementById('historial-rep-modal').addEventListener('click', (e) => {
   if(e.target.id === 'historial-rep-modal') document.getElementById('historial-rep-modal').classList.remove('show');
 });
+
+// ---- Copiar plantilla de otro día ----
+
+document.getElementById('btn-copiar-plantilla').addEventListener('click', async () => {
+  if(!plantillasLoaded) await loadPlantillasSemanal();
+
+  const area = document.getElementById('copiar-plantilla-opciones');
+  area.innerHTML = DIAS_SEMANA_PLANTILLA.map(d => {
+    const p = plantillasSemanal.find(x => x.dia === d.key);
+    const vacio = !p || p.piazzas.length === 0;
+    const esActual = modoReporte === 'plantilla' && diaSemanaActual === d.key;
+    return `<span class="btn-mini" data-dia="${d.key}" style="${vacio ? 'opacity:0.5;' : ''} ${esActual ? 'border-color:var(--celeste); background:var(--celeste); color:#fff;' : ''}">
+      ${d.label}${vacio ? ' (vacío)' : ''}${esActual ? ' (actual)' : ''}
+    </span>`;
+  }).join('');
+
+  area.querySelectorAll('[data-dia]').forEach(btn => {
+    btn.addEventListener('click', () => copiarPlantillaDesde(btn.dataset.dia));
+  });
+
+  document.getElementById('copiar-plantilla-modal').classList.add('show');
+});
+
+document.getElementById('btn-close-copiar-plantilla').addEventListener('click', () => {
+  document.getElementById('copiar-plantilla-modal').classList.remove('show');
+});
+document.getElementById('copiar-plantilla-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'copiar-plantilla-modal') document.getElementById('copiar-plantilla-modal').classList.remove('show');
+});
+
+async function copiarPlantillaDesde(diaOrigen){
+  const origen = plantillasSemanal.find(p => p.dia === diaOrigen);
+  if(!origen || origen.piazzas.length === 0){
+    showToast('Esa plantilla está vacía, no hay nada que copiar.');
+    return;
+  }
+
+  const rep = getReporteActual();
+  if(!rep){
+    showToast('No hay un reporte/plantilla activo para copiar hacia aquí.');
+    return;
+  }
+
+  const origenLabel = (DIAS_SEMANA_PLANTILLA.find(d => d.key === diaOrigen) || {}).label || diaOrigen;
+  if(!confirm(`Esto reemplaza las Piazzas y trabajadores actuales por una copia de "${origenLabel}". ¿Continuar?`)) return;
+
+  // Deep-clone and give every Piazza group and fila a fresh id, so this
+  // copy never shares an id with the source day — important because fila
+  // ids are used as foreign keys into each employee's Atrasos/Salidas/Horas
+  // a favor (repfila_<id>); reusing the same id across two different days
+  // would make one day's entry silently overwrite the other's.
+  const piazzasCopiadas = JSON.parse(JSON.stringify(origen.piazzas)).map(pg => ({
+    ...pg,
+    id: 'piazzarep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    filas: pg.filas.map(f => {
+      const nuevaFila = {
+        ...f,
+        id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+      };
+      // The whole point of copying to a different day is that the roster
+      // repeats but the schedule doesn't — recalculate Horario for the day
+      // we're copying INTO, not the one we copied FROM.
+      if(nuevaFila.empleadoId && nuevaFila.empleadoId !== '__manual__'){
+        const emp = empleados.find(e => e.id === nuevaFila.empleadoId);
+        if(emp){
+          nuevaFila.horario = modoReporte === 'plantilla'
+            ? getHorarioForEmpleadoDiaKey(emp, diaSemanaActual)
+            : getHorarioForEmpleadoFecha(emp, rep.fecha);
+        }
+      }
+      return nuevaFila;
+    })
+  }));
+
+  rep.piazzas = piazzasCopiadas;
+  await saveReporteActual();
+  renderReporteTable();
+  document.getElementById('copiar-plantilla-modal').classList.remove('show');
+  showToast(`Copiado desde "${origenLabel}".`);
+}
 
 // ---- Backup export / import ----
 
