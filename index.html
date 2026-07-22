@@ -847,6 +847,24 @@
     background:#fff;
   }
 
+  #edit-att-body label{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    font-size: 12.5px;
+    font-weight:700;
+    color: var(--ink-soft);
+  }
+  #edit-att-body input, #edit-att-body select{
+    font-weight:400;
+    color: var(--ink);
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--line);
+    font-family: inherit;
+    font-size: 13px;
+  }
+
   .rep-sticky-top{
     position: sticky;
     top: 0;
@@ -1794,6 +1812,19 @@
     <div id="export-piazzas-lista" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;"></div>
     <div style="margin-top:16px; text-align:center;">
       <button class="btn-pdf-small" id="btn-export-piazzas-confirmar">🖨️ Exportar PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="edit-att-modal">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-edit-att">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;" id="edit-att-title">Editar registro</h2>
+    <div id="edit-att-body" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
+    <div style="margin-top:16px; text-align:center;">
+      <button class="btn-mini" id="btn-guardar-edit-att" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar cambios</button>
     </div>
   </div>
 </div>
@@ -3082,6 +3113,7 @@ document.getElementById('btn-export-reporte-pdf').addEventListener('click', () =
     </label>
   `).join('');
   delete document.getElementById('export-piazzas-modal').dataset.historialId;
+  delete document.getElementById('export-piazzas-modal').dataset.historialDia;
   document.getElementById('export-piazzas-modal').classList.add('show');
 });
 
@@ -3099,10 +3131,18 @@ document.getElementById('export-piazzas-modal').addEventListener('click', (e) =>
 });
 document.getElementById('btn-export-piazzas-confirmar').addEventListener('click', () => {
   const seleccionadas = [...document.querySelectorAll('.export-piazza-check:checked')].map(c => c.value);
-  const historialId = document.getElementById('export-piazzas-modal').dataset.historialId;
-  document.getElementById('export-piazzas-modal').classList.remove('show');
+  if(seleccionadas.length === 0){
+    showToast('Elige al menos una Piazza para exportar.');
+    return;
+  }
+  const modal = document.getElementById('export-piazzas-modal');
+  const historialId = modal.dataset.historialId;
+  const historialDia = modal.dataset.historialDia;
+  modal.classList.remove('show');
 
-  if(historialId){
+  if(historialDia){
+    exportarDiaHistorialConFiltro(historialDia, seleccionadas);
+  } else if(historialId){
     const h = historialReportes.find(x => x.id === historialId);
     if(!h) return;
     const piazzasAExportar = h.piazzas.filter(pg => seleccionadas.includes(pg.nombre));
@@ -3469,6 +3509,7 @@ function exportarHistorialIndividual(id){
     </label>
   `).join('');
   document.getElementById('export-piazzas-modal').dataset.historialId = id;
+  delete document.getElementById('export-piazzas-modal').dataset.historialDia;
   document.getElementById('export-piazzas-modal').classList.add('show');
 }
 
@@ -3478,13 +3519,47 @@ function exportarDiaHistorial(clave){
     showToast('No hay reportes para exportar ese día.');
     return;
   }
+
+  // Union of every Piazza name appearing across all reports archived under
+  // this date, so the person can pick which ones to include just like they
+  // can for a single report.
+  const nombresPiazza = [];
+  items.forEach(h => h.piazzas.forEach(pg => {
+    if(!nombresPiazza.includes(pg.nombre)) nombresPiazza.push(pg.nombre);
+  }));
+
+  if(nombresPiazza.length === 0){
+    showToast('No hay Piazzas para exportar ese día.');
+    return;
+  }
+
+  const lista = document.getElementById('export-piazzas-lista');
+  lista.innerHTML = nombresPiazza.map(nombre => {
+    const totalTrabajadores = items.reduce((s,h) => s + h.piazzas.filter(pg => pg.nombre === nombre).reduce((s2,pg) => s2 + pg.filas.length, 0), 0);
+    return `<label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" class="export-piazza-check" value="${nombre}" checked>
+      ${nombre} <span style="color:var(--ink-soft);">(${totalTrabajadores} trabajador${totalTrabajadores === 1 ? '' : 'es'} en total)</span>
+    </label>`;
+  }).join('');
+
+  delete document.getElementById('export-piazzas-modal').dataset.historialId;
+  document.getElementById('export-piazzas-modal').dataset.historialDia = clave;
+  document.getElementById('export-piazzas-modal').classList.add('show');
+}
+
+function exportarDiaHistorialConFiltro(clave, seleccionadas){
+  const items = historialReportes.filter(h => (h.fecha || 'sin-fecha') === clave);
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  items.forEach((h, i) => {
-    if(i > 0) doc.addPage();
+  let primeraAgregada = false;
+  items.forEach(h => {
+    const piazzasAExportar = h.piazzas.filter(pg => seleccionadas.includes(pg.nombre));
+    if(piazzasAExportar.length === 0) return; // this report had none of the chosen Piazzas
+    if(primeraAgregada) doc.addPage();
+    primeraAgregada = true;
     const tituloExtra = h.origenTipo === 'plantilla' ? `Plantilla semanal fija: ${h.origenDia}` : null;
     agregarPaginaReporteAlPdf(doc, {
-      piazzas: h.piazzas,
+      piazzas: piazzasAExportar,
       tituloExtra,
       fecha: h.fecha,
       turnoRango: h.turnoRango,
@@ -3492,6 +3567,12 @@ function exportarDiaHistorial(clave){
       operador: h.operador
     });
   });
+
+  if(!primeraAgregada){
+    showToast('Ninguno de los reportes de ese día tiene las Piazzas seleccionadas.');
+    return;
+  }
+
   const nombreArchivo = clave === 'sin-fecha' ? 'Historial_sin_fecha.pdf' : `Historial_${clave}.pdf`;
   doc.save(nombreArchivo);
 }
@@ -4028,9 +4109,13 @@ function renderAtrasosTable(asis){
       <td>${r.horaFin || '—'}</td>
       <td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td>
       <td>${r.motivo || '—'}</td>
-      <td><button class="del-row" data-id="${r.id}" data-tipo="atrasos">🗑</button></td>
+      <td>
+        <button class="edit-row" data-id="${r.id}" data-tipo="atrasos" title="Editar">✎</button>
+        <button class="del-row" data-id="${r.id}" data-tipo="atrasos" title="Eliminar">🗑</button>
+      </td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('.edit-row').forEach(btn => btn.addEventListener('click', () => editarAttRow(btn.dataset.tipo, btn.dataset.id)));
   tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
 }
 
@@ -4048,9 +4133,13 @@ function renderSalidasTable(asis){
       <td>${r.horaFin || '—'}</td>
       <td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td>
       <td>${r.motivo || '—'}</td>
-      <td><button class="del-row" data-id="${r.id}" data-tipo="salidas">🗑</button></td>
+      <td>
+        <button class="edit-row" data-id="${r.id}" data-tipo="salidas" title="Editar">✎</button>
+        <button class="del-row" data-id="${r.id}" data-tipo="salidas" title="Eliminar">🗑</button>
+      </td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('.edit-row').forEach(btn => btn.addEventListener('click', () => editarAttRow(btn.dataset.tipo, btn.dataset.id)));
   tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
 }
 
@@ -4067,9 +4156,13 @@ function renderHorasTable(asis){
       <td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td>
       <td>${r.horas}</td>
       <td>${r.motivo || '—'}</td>
-      <td><button class="del-row" data-id="${r.id}" data-tipo="horas">🗑</button></td>
+      <td>
+        <button class="edit-row" data-id="${r.id}" data-tipo="horas" title="Editar">✎</button>
+        <button class="del-row" data-id="${r.id}" data-tipo="horas" title="Eliminar">🗑</button>
+      </td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('.edit-row').forEach(btn => btn.addEventListener('click', () => editarAttRow(btn.dataset.tipo, btn.dataset.id)));
   tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
 }
 
@@ -4235,6 +4328,109 @@ async function deleteAttRow(tipo, id){
   renderAttContent();
   showToast('Registro eliminado.');
 }
+
+function editarAttRow(tipo, id){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const asis = ensureAsistencia(emp);
+  const registro = (asis[tipo] || []).find(r => r.id === id);
+  if(!registro) return;
+
+  const esLinkado = String(id).startsWith('repfila_');
+  const avisoLink = esLinkado
+    ? `<div style="font-size:12px; color:var(--peach-deep); background:var(--peach); padding:8px 10px; border-radius:8px;">
+        Este registro viene del Reporte Diario de Mantenimiento. Si vuelves a tocar esa fila allá, se recalculará y reemplazará lo que edites aquí.
+      </div>`
+    : '';
+
+  let bodyHtml = avisoLink;
+  bodyHtml += `<label>Fecha
+    <input type="date" id="edit-att-fecha" value="${registro.fecha || ''}">
+  </label>`;
+
+  if(tipo === 'atrasos'){
+    document.getElementById('edit-att-title').textContent = 'Editar Atraso';
+    bodyHtml += `
+      <label>Hora que debía ingresar
+        <input type="time" id="edit-att-inicio" value="${registro.horaInicio || ''}">
+      </label>
+      <label>Hora que ingresó
+        <input type="time" id="edit-att-fin" value="${registro.horaFin || ''}">
+      </label>
+      <label>Motivo
+        <input type="text" id="edit-att-motivo" value="${(registro.motivo || '').replace(/"/g,'&quot;')}">
+      </label>
+    `;
+  } else if(tipo === 'salidas'){
+    document.getElementById('edit-att-title').textContent = 'Editar Salida antes de tiempo';
+    bodyHtml += `
+      <label>Hora que salió
+        <input type="time" id="edit-att-inicio" value="${registro.horaInicio || ''}">
+      </label>
+      <label>Hora que debía salir
+        <input type="time" id="edit-att-fin" value="${registro.horaFin || ''}">
+      </label>
+      <label>Motivo
+        <input type="text" id="edit-att-motivo" value="${(registro.motivo || '').replace(/"/g,'&quot;')}">
+      </label>
+    `;
+  } else if(tipo === 'horas'){
+    document.getElementById('edit-att-title').textContent = 'Editar Horas a favor / en contra';
+    bodyHtml += `
+      <label>Tipo
+        <select id="edit-att-tipohoras">
+          <option value="favor" ${registro.tipo === 'favor' ? 'selected' : ''}>A favor</option>
+          <option value="contra" ${registro.tipo === 'contra' ? 'selected' : ''}>En contra</option>
+        </select>
+      </label>
+      <label>Horas
+        <input type="number" id="edit-att-horas" min="0" step="0.25" value="${registro.horas || 0}">
+      </label>
+      <label>Motivo
+        <input type="text" id="edit-att-motivo" value="${(registro.motivo || '').replace(/"/g,'&quot;')}">
+      </label>
+    `;
+  }
+
+  document.getElementById('edit-att-body').innerHTML = bodyHtml;
+  document.getElementById('edit-att-modal').dataset.tipo = tipo;
+  document.getElementById('edit-att-modal').dataset.id = id;
+  document.getElementById('edit-att-modal').classList.add('show');
+}
+
+document.getElementById('btn-guardar-edit-att').addEventListener('click', async () => {
+  const modal = document.getElementById('edit-att-modal');
+  const tipo = modal.dataset.tipo;
+  const id = modal.dataset.id;
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const asis = ensureAsistencia(emp);
+  const registro = (asis[tipo] || []).find(r => r.id === id);
+  if(!registro) return;
+
+  registro.fecha = document.getElementById('edit-att-fecha').value;
+  if(tipo === 'atrasos' || tipo === 'salidas'){
+    registro.horaInicio = document.getElementById('edit-att-inicio').value;
+    registro.horaFin = document.getElementById('edit-att-fin').value;
+    registro.motivo = document.getElementById('edit-att-motivo').value;
+  } else if(tipo === 'horas'){
+    registro.tipo = document.getElementById('edit-att-tipohoras').value;
+    registro.horas = Number(document.getElementById('edit-att-horas').value) || 0;
+    registro.motivo = document.getElementById('edit-att-motivo').value;
+  }
+
+  await saveEmpleados();
+  modal.classList.remove('show');
+  renderAttContent();
+  showToast('Registro actualizado.');
+});
+
+document.getElementById('btn-close-edit-att').addEventListener('click', () => {
+  document.getElementById('edit-att-modal').classList.remove('show');
+});
+document.getElementById('edit-att-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'edit-att-modal') document.getElementById('edit-att-modal').classList.remove('show');
+});
 
 function exportAttPdf(){
   const emp = getAttEmpleado();
