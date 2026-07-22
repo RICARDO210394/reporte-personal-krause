@@ -4213,21 +4213,33 @@ function renderHistorial(emp){
 
   const atrasosRows = asis.atrasos.length
     ? [...asis.atrasos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
-        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td>
+        <td>
+          <button class="edit-row" data-id="${r.id}" data-tipo="atrasos" data-emp="${emp.id}" title="Editar">✎</button>
+          <button class="del-row" data-id="${r.id}" data-tipo="atrasos" data-emp="${emp.id}" title="Eliminar">🗑</button>
+        </td></tr>
       `).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
 
   const salidasRows = asis.salidas.length
     ? [...asis.salidas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
-        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
+        <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td>
+        <td>
+          <button class="edit-row" data-id="${r.id}" data-tipo="salidas" data-emp="${emp.id}" title="Editar">✎</button>
+          <button class="del-row" data-id="${r.id}" data-tipo="salidas" data-emp="${emp.id}" title="Eliminar">🗑</button>
+        </td></tr>
       `).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    : '<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
 
   const horasRows = asis.horas.length
     ? [...asis.horas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
-        <tr><td>${formatDate(r.fecha)}</td><td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td><td>${decimalHoursToHM(r.horas)}</td><td>${r.motivo || '—'}</td></tr>
+        <tr><td>${formatDate(r.fecha)}</td><td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td><td>${decimalHoursToHM(r.horas)}</td><td>${r.motivo || '—'}</td>
+        <td>
+          <button class="edit-row" data-id="${r.id}" data-tipo="horas" data-emp="${emp.id}" title="Editar">✎</button>
+          <button class="del-row" data-id="${r.id}" data-tipo="horas" data-emp="${emp.id}" title="Eliminar">🗑</button>
+        </td></tr>
       `).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
 
   const comentarios = emp.comentarios || [];
   const comportamientoHtml = comentarios.length
@@ -4251,18 +4263,21 @@ function renderHistorial(emp){
 
   area.innerHTML = `
     <div class="section-band section-band-sub">Atrasos</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${atrasosRows}</tbody></table>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${atrasosRows}</tbody></table>
 
     <div class="section-band section-band-sub">Salidas antes de tiempo</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${salidasRows}</tbody></table>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${salidasRows}</tbody></table>
 
     <div class="section-band section-band-sub">Horas a favor y en contra</div>
-    <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th></tr></thead><tbody>${horasRows}</tbody></table>
+    <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th><th></th></tr></thead><tbody>${horasRows}</tbody></table>
     <div class="balance-badge ${cls}">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
 
     <div class="section-band section-band-sub" style="margin-top:18px;">Comportamiento</div>
     <div class="comment-log" style="max-height:220px;">${comportamientoHtml}</div>
   `;
+
+  area.querySelectorAll('.edit-row').forEach(btn => btn.addEventListener('click', () => editarAttRow(btn.dataset.tipo, btn.dataset.id, btn.dataset.emp)));
+  area.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id, btn.dataset.emp)));
 }
 
 async function addAtrasoOrSalida(tipo, prefix){
@@ -4316,9 +4331,9 @@ async function addHora(){
   showToast('Registro agregado.');
 }
 
-async function deleteAttRow(tipo, id){
+async function deleteAttRow(tipo, id, empIdExplicito){
   if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-  const emp = getAttEmpleado();
+  const emp = empIdExplicito ? empleados.find(e => e.id === empIdExplicito) : getAttEmpleado();
   if(!emp) return;
   const asis = ensureAsistencia(emp);
   asis[tipo] = asis[tipo].filter(r => r.id !== id);
@@ -4329,8 +4344,8 @@ async function deleteAttRow(tipo, id){
   showToast('Registro eliminado.');
 }
 
-function editarAttRow(tipo, id){
-  const emp = getAttEmpleado();
+function editarAttRow(tipo, id, empIdExplicito){
+  const emp = empIdExplicito ? empleados.find(e => e.id === empIdExplicito) : getAttEmpleado();
   if(!emp) return;
   const asis = ensureAsistencia(emp);
   const registro = (asis[tipo] || []).find(r => r.id === id);
@@ -4395,6 +4410,8 @@ function editarAttRow(tipo, id){
   document.getElementById('edit-att-body').innerHTML = bodyHtml;
   document.getElementById('edit-att-modal').dataset.tipo = tipo;
   document.getElementById('edit-att-modal').dataset.id = id;
+  if(empIdExplicito) document.getElementById('edit-att-modal').dataset.empId = empIdExplicito;
+  else delete document.getElementById('edit-att-modal').dataset.empId;
   document.getElementById('edit-att-modal').classList.add('show');
 }
 
@@ -4402,7 +4419,8 @@ document.getElementById('btn-guardar-edit-att').addEventListener('click', async 
   const modal = document.getElementById('edit-att-modal');
   const tipo = modal.dataset.tipo;
   const id = modal.dataset.id;
-  const emp = getAttEmpleado();
+  const empIdExplicito = modal.dataset.empId;
+  const emp = empIdExplicito ? empleados.find(e => e.id === empIdExplicito) : getAttEmpleado();
   if(!emp) return;
   const asis = ensureAsistencia(emp);
   const registro = (asis[tipo] || []).find(r => r.id === id);
