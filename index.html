@@ -819,6 +819,34 @@
   .hist-rep-meta{ color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
   .hist-rep-actions{ display:flex; gap:6px; }
 
+  .hist-grupo-fecha{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .hist-grupo-header{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f2f0eb;
+    cursor: pointer;
+  }
+  .hist-grupo-flecha{ font-size: 12px; color: var(--ink-soft); flex-shrink:0; }
+  .hist-grupo-titulo{ flex:1; font-size: 14px; }
+  .hist-grupo-titulo strong{ text-transform: capitalize; }
+  .hist-grupo-body{ padding: 12px 16px; }
+  .hist-edit-f{
+    width:100%;
+    padding: 5px 6px;
+    border-radius: 6px;
+    border: 1.5px solid var(--line);
+    font-size: 12.5px;
+    font-family: inherit;
+    background:#fff;
+  }
+
   .rep-sticky-top{
     position: sticky;
     top: 0;
@@ -2037,6 +2065,68 @@ function minutesBetween(horaInicio, horaFin){
   return mins;
 }
 
+function parseHorarioRango(horarioStr){
+  // Parses a scheduled shift like "07:00-16:00" into { inicio, fin }.
+  // Returns null for anything else (blank, "Libre", "Rotativo", free text).
+  if(!horarioStr) return null;
+  const m = String(horarioStr).trim().match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+  if(!m) return null;
+  return { inicio: m[1], fin: m[2] };
+}
+
+function aplicarAutoDeteccion(fila){
+  // Compares the real Ingreso/Salida the supervisor typed against the
+  // scheduled Horario, and flags Atraso / Salida antes de tiempo on its
+  // own — the supervisor never has to pick these from the Tipo dropdown.
+  const rango = parseHorarioRango(fila.horario);
+  fila._atrasoMin = 0;
+  fila._salidaTempranoMin = 0;
+
+  if(rango){
+    if(fila.ingreso && rango.inicio){
+      const mins = minutesBetween(rango.inicio, fila.ingreso);
+      // A gap of 12h+ almost certainly means they arrived EARLY (the clock
+      // wrapped past midnight in minutesBetween), not 12+ hours late.
+      if(mins > 0 && mins < 12 * 60) fila._atrasoMin = mins;
+    }
+    if(fila.salida && rango.fin){
+      const mins = minutesBetween(fila.salida, rango.fin);
+      if(mins > 0 && mins < 12 * 60) fila._salidaTempranoMin = mins;
+    }
+  }
+
+  if(fila._atrasoMin > 0 || fila._salidaTempranoMin > 0){
+    fila.tipo = fila._atrasoMin > 0 ? 'Atraso' : 'Salida antes de tiempo';
+    const totalMin = fila._atrasoMin + fila._salidaTempranoMin;
+    fila.horas = Math.round((totalMin / 60) * 100) / 100;
+    fila.horasH = Math.floor(totalMin / 60);
+    fila.horasM = totalMin % 60;
+  } else if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo'){
+    // These two labels only ever come from auto-detection — if the times
+    // no longer justify them (the person corrected an entry), don't leave
+    // a stale label sitting there.
+    fila.tipo = '';
+    fila.horas = 0;
+    fila.horasH = 0;
+    fila.horasM = 0;
+  }
+}
+
+async function sincronizarTodasLasFilas(rep){
+  // Runs the auto-detection + Atrasos/Horas-a-favor sync across every row
+  // in the report — used right after loading or copying a plantilla, so
+  // data that was never individually edited still gets picked up.
+  let tocoEmpleados = false;
+  for(const pg of rep.piazzas){
+    for(const fila of pg.filas){
+      aplicarAutoDeteccion(fila);
+      const cambio = await syncFilaToAsistencia(rep, fila);
+      if(cambio) tocoEmpleados = true;
+    }
+  }
+  return tocoEmpleados;
+}
+
 function formatMinutes(mins){
   const h = Math.floor(mins/60);
   const m = mins % 60;
@@ -2520,6 +2610,7 @@ function renderReporteTable(){
     html += `<tr class="rep-piazza-band" style="background:${color};"><td colspan="8">${piazzaGrupo.nombre}</td><td><button class="rep-del-piazza" data-piazza-id="${piazzaGrupo.id}" title="Eliminar Piazza">🗑</button></td></tr>`;
 
     piazzaGrupo.filas.forEach(fila => {
+      aplicarAutoDeteccion(fila);
       const impacto = computeImpacto(fila);
       const impactoHtml = impacto.tipo === 'favor'
         ? `<span class="rep-impacto-favor">+${impacto.horas}h</span>`
@@ -2532,17 +2623,11 @@ function renderReporteTable(){
 
       const mostrarNombreManual = fila.empleadoId === '__manual__';
 
-      let ingresoLabel = 'Ingreso', salidaLabel = 'Salida';
-      let horasAutoCalculadas = false;
-      if(fila.tipo === 'Atraso'){
-        ingresoLabel = 'Debía ingresar';
-        salidaLabel = 'Llegó';
-        horasAutoCalculadas = true;
-      } else if(fila.tipo === 'Salida antes de tiempo'){
-        ingresoLabel = 'Salió';
-        salidaLabel = 'Debía salir';
-        horasAutoCalculadas = true;
-      }
+      // Ingreso/Salida are always the real, actual clock-in/clock-out times.
+      // Whether that counts as an Atraso or a Salida antes de tiempo is
+      // detected automatically by comparing them against Horario (the
+      // scheduled shift) — never chosen by hand.
+      const horasAutoCalculadas = !!((fila._atrasoMin || 0) > 0 || (fila._salidaTempranoMin || 0) > 0);
       const disabledHoras = horasAutoCalculadas ? 'disabled' : '';
 
       let filaTipoClase = '';
@@ -2556,12 +2641,12 @@ function renderReporteTable(){
           ${mostrarNombreManual ? `<input type="text" class="rep-f" data-campo="nombreManual" value="${fila.nombreManual || ''}" placeholder="Nombre" style="margin-top:2px;">` : ''}
         </td>
         <td>
-          <div class="rep-time-label">${ingresoLabel}</div>
           <input type="time" class="rep-f" data-campo="ingreso" value="${fila.ingreso || ''}">
+          <div class="rep-time-label rep-label-ingreso" style="${(fila._atrasoMin||0) > 0 ? 'color:var(--contra); font-weight:700;' : ''}">${(fila._atrasoMin||0) > 0 ? `⏰ Atraso: ${formatMinutes(fila._atrasoMin)}` : ''}</div>
         </td>
         <td>
-          <div class="rep-time-label">${salidaLabel}</div>
           <input type="time" class="rep-f" data-campo="salida" value="${fila.salida || ''}">
+          <div class="rep-time-label rep-label-salida" style="${(fila._salidaTempranoMin||0) > 0 ? 'color:var(--contra); font-weight:700;' : ''}">${(fila._salidaTempranoMin||0) > 0 ? `⏰ Salió antes: ${formatMinutes(fila._salidaTempranoMin)}` : ''}</div>
         </td>
         <td><input type="text" class="rep-f" data-campo="horario" value="${fila.horario || ''}" placeholder="Horario"></td>
         <td><select class="rep-f" data-campo="tipo">
@@ -2573,10 +2658,10 @@ function renderReporteTable(){
             <select class="rep-f" data-campo="horasH" style="width:50%;" ${disabledHoras}>${Array.from({length:25}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasH||0) === n ? 'selected' : ''}>${n}h</option>`).join('')}</select>
             <select class="rep-f" data-campo="horasM" style="width:50%;" ${disabledHoras}>${Array.from({length:60}, (_,i)=>i).map(n => `<option value="${n}" ${(fila.horasM||0) === n ? 'selected' : ''}>${n}m</option>`).join('')}</select>
           </div>
-          ${horasAutoCalculadas ? '<div class="rep-time-label">Calculado automático</div>' : ''}
+          <div class="rep-time-label rep-auto-hint" style="${horasAutoCalculadas ? '' : 'display:none;'}">Calculado automático</div>
         </td>
         <td><input type="text" class="rep-f" data-campo="detalle" value="${fila.detalle || ''}" placeholder="Observación"></td>
-        <td>${impactoHtml}</td>
+        <td class="rep-impacto-cell">${impactoHtml}</td>
         <td><button class="rep-del-row" title="Eliminar fila">🗑</button></td>
       </tr>`;
     });
@@ -2665,6 +2750,7 @@ async function onRepFieldChange(e){
   if(!fila) return;
 
   const campo = e.target.dataset.campo;
+  let necesitaRenderCompleto = false;
 
   if(campo === 'empleadoId'){
     fila.empleadoId = e.target.value;
@@ -2674,6 +2760,10 @@ async function onRepFieldChange(e){
         ? getHorarioForEmpleadoDiaKey(emp, diaSemanaActual)
         : getHorarioForEmpleadoFecha(emp, rep.fecha);
     }
+    // Switching to/from "escribir nombre manualmente" shows or hides an
+    // extra text input that only exists in the full row template, so this
+    // one case still needs the full rebuild.
+    necesitaRenderCompleto = true;
   } else if(campo === 'horasH' || campo === 'horasM'){
     fila[campo] = Number(e.target.value) || 0;
     fila.horas = Math.round(((fila.horasH || 0) + (fila.horasM || 0) / 60) * 100) / 100;
@@ -2681,78 +2771,155 @@ async function onRepFieldChange(e){
     fila[campo] = e.target.value;
   }
 
-  // For Atraso / Salida antes de tiempo, the hours are always derived from
-  // the two time fields (debía vs. real), never typed in manually.
-  if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo'){
-    const mins = minutesBetween(fila.ingreso, fila.salida);
-    fila.horas = Math.round((mins / 60) * 100) / 100;
-    fila.horasH = Math.floor(mins / 60);
-    fila.horasM = mins % 60;
+  // Ingreso/Salida are the real actual times; Atraso and Salida antes de
+  // tiempo are now detected automatically by comparing them against the
+  // scheduled Horario — never chosen by hand from the Tipo dropdown.
+  aplicarAutoDeteccion(fila);
+
+  const tocoEmpleados = await syncFilaToAsistencia(rep, fila);
+
+  // Only write to employees if this edit actually changed one of their
+  // Atrasos/Salidas/Horas a favor entries — most edits (typing an
+  // Observación, picking a Tipo that doesn't sync, etc.) don't need it.
+  // Running both writes in parallel (instead of one after another) also
+  // cuts the round-trip time roughly in half when both are needed.
+  if(tocoEmpleados){
+    await Promise.all([saveReporteActual(), saveEmpleados()]);
+  } else {
+    await saveReporteActual();
   }
 
-  await syncFilaToAsistencia(rep, fila);
-  await saveReporteActual();
-  await saveEmpleados();
-  renderReporteTable();
+  // Patch just this row's cells instead of rebuilding the whole table (which
+  // also regenerates every row's "Nombres" dropdown options) — this is what
+  // was making every single edit feel slow.
+  if(necesitaRenderCompleto) renderReporteTable();
+  else actualizarFilaEnDom(fila);
 }
 
+function actualizarFilaEnDom(fila){
+  const tr = document.querySelector(`tr[data-fila-id="${fila.id}"]`);
+  if(!tr) return;
+
+  let filaTipoClase = '';
+  if(fila.tipo === 'Atraso' || fila.tipo === 'Salida antes de tiempo') filaTipoClase = 'rep-row-contra';
+  else if(fila.tipo === 'Horas extras') filaTipoClase = 'rep-row-favor';
+  else if(fila.tipo === 'Novedad' || fila.tipo === 'Permiso' || fila.tipo === 'Otros') filaTipoClase = 'rep-row-novedad';
+  tr.className = filaTipoClase;
+
+  const horasAutoCalculadas = !!((fila._atrasoMin || 0) > 0 || (fila._salidaTempranoMin || 0) > 0);
+
+  const lblIngreso = tr.querySelector('.rep-label-ingreso');
+  const lblSalida = tr.querySelector('.rep-label-salida');
+  if(lblIngreso){
+    const hay = (fila._atrasoMin || 0) > 0;
+    lblIngreso.textContent = hay ? `⏰ Atraso: ${formatMinutes(fila._atrasoMin)}` : '';
+    lblIngreso.style.color = hay ? 'var(--contra)' : '';
+    lblIngreso.style.fontWeight = hay ? '700' : '';
+  }
+  if(lblSalida){
+    const hay = (fila._salidaTempranoMin || 0) > 0;
+    lblSalida.textContent = hay ? `⏰ Salió antes: ${formatMinutes(fila._salidaTempranoMin)}` : '';
+    lblSalida.style.color = hay ? 'var(--contra)' : '';
+    lblSalida.style.fontWeight = hay ? '700' : '';
+  }
+
+  const tipoSel = tr.querySelector('[data-campo="tipo"]');
+  if(tipoSel) tipoSel.value = fila.tipo || '';
+
+  const horasHSel = tr.querySelector('[data-campo="horasH"]');
+  const horasMSel = tr.querySelector('[data-campo="horasM"]');
+  if(horasHSel){ horasHSel.value = fila.horasH || 0; horasHSel.disabled = horasAutoCalculadas; }
+  if(horasMSel){ horasMSel.value = fila.horasM || 0; horasMSel.disabled = horasAutoCalculadas; }
+
+  const hint = tr.querySelector('.rep-auto-hint');
+  if(hint) hint.style.display = horasAutoCalculadas ? '' : 'none';
+
+  const impacto = computeImpacto(fila);
+  const impactoCell = tr.querySelector('.rep-impacto-cell');
+  if(impactoCell){
+    impactoCell.innerHTML = impacto.tipo === 'favor'
+      ? `<span class="rep-impacto-favor">+${impacto.horas}h</span>`
+      : (impacto.tipo === 'contra' ? `<span class="rep-impacto-contra">-${impacto.horas}h</span>` : '');
+  }
+}
+
+
 async function syncFilaToAsistencia(rep, fila){
-  // Both a dated report and a weekday template can now carry a real Fecha
-  // (the template's Fecha field), so either can create real attendance
-  // events as long as a date has actually been entered.
-  if(!rep.fecha) return;
+  const linkIdAtraso = 'repfila_' + fila.id + '_atraso';
+  const linkIdSalida = 'repfila_' + fila.id + '_salida';
+  const linkIdHoras = 'repfila_' + fila.id;
+  // A plantilla semanal (Lunes, Martes...) usually never gets an explicit
+  // Fecha filled in — it's meant to repeat every week. That must NOT block
+  // the sync to Atrasos vs Horas a favor; fall back to today's date so the
+  // entry always has something real to file under.
+  const fechaParaRegistro = rep.fecha || new Date().toISOString().slice(0,10);
 
-  const linkId = 'repfila_' + fila.id;
+  let cambioAlgo = false;
 
-  // Always clear any previous linked entry first, in case the tipo,
-  // employee, times, or hours changed since the last save.
+  // Always clear any previously linked entries first, in case the times,
+  // employee, or hours changed since the last save.
   empleados.forEach(e => {
     if(e.asistencia){
-      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
-      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
-      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
+      const antes = (e.asistencia.horas ? e.asistencia.horas.length : 0)
+        + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0);
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkIdHoras);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
+      const despues = (e.asistencia.horas ? e.asistencia.horas.length : 0)
+        + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0);
+      if(antes !== despues) cambioAlgo = true;
     }
   });
 
-  if(!fila.empleadoId || fila.empleadoId === '__manual__') return;
+  if(!fila.empleadoId || fila.empleadoId === '__manual__') return cambioAlgo;
   const emp = empleados.find(e => e.id === fila.empleadoId);
-  if(!emp) return;
+  if(!emp) return cambioAlgo;
 
   const asis = ensureAsistencia(emp);
+  const rango = parseHorarioRango(fila.horario);
 
-  if(fila.tipo === 'Atraso'){
-    if(!fila.ingreso || !fila.salida) return;
-    // ingreso = hora que debía ingresar, salida = hora que llegó — same
-    // semantics as the Atrasos vs Horas a favor tab, so the "Total" there
-    // computes correctly from these two times.
+  // Atraso and Salida antes de tiempo are driven purely by comparing the
+  // real Ingreso/Salida against the scheduled Horario — completely
+  // independent of whatever the Tipo dropdown happens to show, so both can
+  // be recorded on the same row if the person arrived late AND left early.
+  if(rango && fila.ingreso && rango.inicio && (fila._atrasoMin || 0) > 0){
     asis.atrasos.push({
-      id: linkId,
-      fecha: rep.fecha,
-      horaInicio: fila.ingreso,
-      horaFin: fila.salida,
+      id: linkIdAtraso,
+      fecha: fechaParaRegistro,
+      horaInicio: rango.inicio,
+      horaFin: fila.ingreso,
       motivo: `${fila.detalle || 'Atraso'} (Reporte diario de mantenimiento)`
     });
-  } else if(fila.tipo === 'Salida antes de tiempo'){
-    if(!fila.ingreso || !fila.salida) return;
-    // ingreso = hora en que salió, salida = hora que debía salir.
+    cambioAlgo = true;
+  }
+  if(rango && fila.salida && rango.fin && (fila._salidaTempranoMin || 0) > 0){
     asis.salidas.push({
-      id: linkId,
-      fecha: rep.fecha,
-      horaInicio: fila.ingreso,
-      horaFin: fila.salida,
+      id: linkIdSalida,
+      fecha: fechaParaRegistro,
+      horaInicio: fila.salida,
+      horaFin: rango.fin,
       motivo: `${fila.detalle || 'Salida antes de tiempo'} (Reporte diario de mantenimiento)`
     });
-  } else if(fila.tipo === 'Horas extras'){
-    const horas = Number(fila.horas) || 0;
-    if(horas <= 0) return;
-    asis.horas.push({
-      id: linkId,
-      fecha: rep.fecha,
-      tipo: 'favor',
-      horas,
-      motivo: `${fila.detalle || fila.tipo} (Reporte diario de mantenimiento)`
-    });
+    cambioAlgo = true;
   }
+
+  if(fila.tipo === 'Horas extras'){
+    const horas = Number(fila.horas) || 0;
+    if(horas > 0){
+      asis.horas.push({
+        id: linkIdHoras,
+        fecha: fechaParaRegistro,
+        tipo: 'favor',
+        horas,
+        motivo: `${fila.detalle || fila.tipo} (Reporte diario de mantenimiento)`
+      });
+      cambioAlgo = true;
+    }
+  }
+
+  return cambioAlgo;
 }
 
 async function addReporteFila(piazzaId){
@@ -2774,12 +2941,14 @@ async function deleteReporteFila(piazzaId, filaId){
   if(!rep) return;
   const piazzaGrupo = rep.piazzas.find(p => p.id === piazzaId);
   if(!piazzaGrupo) return;
-  const linkId = 'repfila_' + filaId;
+  const linkIdHoras = 'repfila_' + filaId;
+  const linkIdAtraso = 'repfila_' + filaId + '_atraso';
+  const linkIdSalida = 'repfila_' + filaId + '_salida';
   empleados.forEach(e => {
     if(e.asistencia){
-      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
-      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
-      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkIdHoras);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
     }
   });
   piazzaGrupo.filas = piazzaGrupo.filas.filter(f => f.id !== filaId);
@@ -2823,6 +2992,42 @@ document.getElementById('btn-confirm-piazza-rep').addEventListener('click', asyn
   showToast('Piazza agregada al reporte.');
 });
 
+function agregarPaginaReporteAlPdf(doc, { piazzas, tituloExtra, fecha, turnoRango, supervisor, operador }){
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text('Reporte Diario de Mantenimiento', 14, 14);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+
+  let y = 20;
+  if(tituloExtra){
+    doc.text(tituloExtra, 14, y);
+    y += 6;
+  }
+  doc.text(`Fecha: ${fecha ? formatDate(fecha) : '-'}    Turno: ${turnoRango || '-'}`, 14, y);
+  y += 5;
+  doc.text(`Supervisor: ${supervisor || '-'}    Operador: ${operador || '-'}`, 14, y);
+  y += 5;
+
+  const body = [];
+  piazzas.forEach(pg => {
+    body.push([{ content: pg.nombre, colSpan: 7, styles: { fillColor: hexToRgb(PIAZZA_COLORES[pg.nombre] || '#7a8a95'), textColor: [255,255,255], fontStyle: 'bold', halign: 'center' } }]);
+    pg.filas.forEach(f => {
+      const imp = computeImpacto(f);
+      const impactoTxt = imp.tipo === 'favor' ? `+${imp.horas}h` : (imp.tipo === 'contra' ? `-${imp.horas}h` : '-');
+      body.push([getNombreFila(f) || '-', f.ingreso || '-', f.salida || '-', f.horario || '-', f.tipo || '-', f.detalle || '-', impactoTxt]);
+    });
+  });
+
+  doc.autoTable({
+    startY: y + 5,
+    head: [['Nombres','Ingreso','Salida','Horario','Tipo','Observación','Impacto']],
+    body,
+    styles: { fontSize: 7.5, cellPadding: 1.5 },
+    headStyles: { fillColor: [58,63,107] }
+  });
+}
+
 function exportReportePdf(piazzasFiltro){
   const rep = getReporteActual();
   if(!rep || rep.piazzas.length === 0){
@@ -2842,48 +3047,18 @@ function exportReportePdf(piazzasFiltro){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Reporte Diario de Mantenimiento', 14, 14);
-  doc.setFont(undefined, 'normal');
-  doc.setFontSize(9);
-  if(modoReporte === 'plantilla'){
-    const diaLabel = (DIAS_SEMANA_PLANTILLA.find(d => d.key === rep.dia) || {}).label || rep.dia;
-    doc.text(`Plantilla semanal fija: ${diaLabel}`, 14, 20);
-  } else {
-    doc.text(`Fecha: ${formatDate(rep.fecha)}    Turno: ${rep.turnoRango || '-'}`, 14, 20);
-    doc.text(`Supervisor: ${rep.supervisor || '-'}    Operador: ${rep.operador || '-'}`, 14, 25);
-  }
+  const tituloExtra = modoReporte === 'plantilla'
+    ? `Plantilla semanal fija: ${(DIAS_SEMANA_PLANTILLA.find(d => d.key === rep.dia) || {}).label || rep.dia}`
+    : null;
 
-  const body = [];
-  piazzasAExportar.forEach(pg => {
-    body.push([{ content: pg.nombre, colSpan: 7, styles: { fillColor: hexToRgb(PIAZZA_COLORES[pg.nombre] || '#7a8a95'), textColor: [255,255,255], fontStyle: 'bold', halign: 'center' } }]);
-    pg.filas.forEach(f => {
-      const imp = computeImpacto(f);
-      const impactoTxt = imp.tipo === 'favor' ? `+${imp.horas}h` : (imp.tipo === 'contra' ? `-${imp.horas}h` : '-');
-      body.push([getNombreFila(f) || '-', f.ingreso || '-', f.salida || '-', f.horario || '-', f.tipo || '-', f.detalle || '-', impactoTxt]);
-    });
+  agregarPaginaReporteAlPdf(doc, {
+    piazzas: piazzasAExportar,
+    tituloExtra,
+    fecha: rep.fecha,
+    turnoRango: rep.turnoRango,
+    supervisor: rep.supervisor,
+    operador: rep.operador
   });
-
-  doc.autoTable({
-    startY: 30,
-    head: [['Nombres','Ingreso','Salida','Horario','Tipo','Observación','Impacto']],
-    body,
-    styles: { fontSize: 7.5, cellPadding: 1.5 },
-    headStyles: { fillColor: [58,63,107] }
-  });
-
-  let favor = 0, contra = 0;
-  piazzasAExportar.forEach(pg => pg.filas.forEach(f => {
-    const imp = computeImpacto(f);
-    if(imp.tipo === 'favor') favor += imp.horas;
-    if(imp.tipo === 'contra') contra += imp.horas;
-  }));
-  const neto = Math.round((favor - contra) * 100) / 100;
-
-  const y = doc.lastAutoTable.finalY + 8;
-  doc.setFontSize(10);
-  doc.text(`Balance del día: ${neto}h  (Favor: ${favor}h / En contra: ${contra}h)`, 14, y);
 
   doc.save(modoReporte === 'plantilla' ? `Plantilla_${rep.dia}.pdf` : `Reporte_Mantenimiento_${rep.fecha}.pdf`);
 }
@@ -2906,6 +3081,7 @@ document.getElementById('btn-export-reporte-pdf').addEventListener('click', () =
       ${pg.nombre} <span style="color:var(--ink-soft);">(${pg.filas.length} trabajador${pg.filas.length === 1 ? '' : 'es'})</span>
     </label>
   `).join('');
+  delete document.getElementById('export-piazzas-modal').dataset.historialId;
   document.getElementById('export-piazzas-modal').classList.add('show');
 });
 
@@ -2923,8 +3099,32 @@ document.getElementById('export-piazzas-modal').addEventListener('click', (e) =>
 });
 document.getElementById('btn-export-piazzas-confirmar').addEventListener('click', () => {
   const seleccionadas = [...document.querySelectorAll('.export-piazza-check:checked')].map(c => c.value);
+  const historialId = document.getElementById('export-piazzas-modal').dataset.historialId;
   document.getElementById('export-piazzas-modal').classList.remove('show');
-  exportReportePdf(seleccionadas);
+
+  if(historialId){
+    const h = historialReportes.find(x => x.id === historialId);
+    if(!h) return;
+    const piazzasAExportar = h.piazzas.filter(pg => seleccionadas.includes(pg.nombre));
+    if(piazzasAExportar.length === 0){
+      showToast('No seleccionaste ninguna Piazza para exportar.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const tituloExtra = h.origenTipo === 'plantilla' ? `Plantilla semanal fija: ${h.origenDia}` : null;
+    agregarPaginaReporteAlPdf(doc, {
+      piazzas: piazzasAExportar,
+      tituloExtra,
+      fecha: h.fecha,
+      turnoRango: h.turnoRango,
+      supervisor: h.supervisor,
+      operador: h.operador
+    });
+    doc.save(h.fecha ? `Historial_${h.fecha}.pdf` : `Historial_reporte.pdf`);
+  } else {
+    exportReportePdf(seleccionadas);
+  }
 });
 
 
@@ -3025,15 +3225,26 @@ document.getElementById('btn-limpiar-rep').addEventListener('click', async () =>
 });
 
 function syncFilaToAsistenciaCleared(fila){
-  const linkId = 'repfila_' + fila.id;
+  const linkIdHoras = 'repfila_' + fila.id;
+  const linkIdAtraso = 'repfila_' + fila.id + '_atraso';
+  const linkIdSalida = 'repfila_' + fila.id + '_salida';
   empleados.forEach(e => {
     if(e.asistencia){
-      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkId);
-      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkId);
-      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkId);
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkIdHoras);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
     }
   });
 }
+
+function claseFilaSegunTipo(tipo){
+  if(tipo === 'Atraso' || tipo === 'Salida antes de tiempo') return 'rep-row-contra';
+  if(tipo === 'Horas extras') return 'rep-row-favor';
+  if(tipo === 'Novedad' || tipo === 'Permiso' || tipo === 'Otros') return 'rep-row-novedad';
+  return '';
+}
+
+let historialGruposAbiertos = {};
 
 function renderHistorialRepLista(){
   const area = document.getElementById('historial-rep-lista');
@@ -3042,27 +3253,88 @@ function renderHistorialRepLista(){
     return;
   }
 
-  const ordenado = [...historialReportes].sort((a,b) => (b.archivadoEn||0) - (a.archivadoEn||0));
-  area.innerHTML = ordenado.map(h => {
-    const totalFilas = h.piazzas.reduce((s,p) => s + p.filas.length, 0);
-    const origen = h.origenTipo === 'plantilla' ? `Plantilla: ${h.origenDia}` : `Fecha: ${formatDate(h.fecha)}`;
-    return `
-      <div class="hist-rep-card">
-        <div class="hist-rep-info">
-          <strong>${origen}</strong>
-          <div class="hist-rep-meta">Turno: ${h.turnoRango || '—'} · Supervisor: ${h.supervisor || '—'} · Operador: ${h.operador || '—'}</div>
-          <div class="hist-rep-meta">${h.piazzas.length} Piazza(s) · ${totalFilas} trabajador(es) · Enviado: ${new Date(h.archivadoEn).toLocaleString('es-EC')}</div>
+  // Group by Fecha (the weekday plantillas without a Fecha filled in fall
+  // under a shared "Sin fecha" bucket) — same spirit as the vehicle-fleet
+  // app's day-by-day history.
+  const grupos = {};
+  historialReportes.forEach(h => {
+    const clave = h.fecha || 'sin-fecha';
+    if(!grupos[clave]) grupos[clave] = [];
+    grupos[clave].push(h);
+  });
+
+  const clavesOrdenadas = Object.keys(grupos).sort((a,b) => {
+    if(a === 'sin-fecha') return 1;
+    if(b === 'sin-fecha') return -1;
+    return b.localeCompare(a);
+  });
+
+  area.innerHTML = clavesOrdenadas.map(clave => {
+    const items = grupos[clave].sort((a,b) => (b.archivadoEn||0) - (a.archivadoEn||0));
+    const totalReportes = items.length;
+    const conNovedades = items.some(h => h.piazzas.some(pg => pg.filas.some(f => f.tipo && f.tipo !== '')));
+    const abierto = !!historialGruposAbiertos[clave];
+    const labelFecha = clave === 'sin-fecha' ? 'Sin fecha (plantillas sin fecha asignada)' : formatDateLong(clave);
+
+    const filasHtml = items.map(h => {
+      const totalFilas = h.piazzas.reduce((s,p) => s + p.filas.length, 0);
+      const origen = h.origenTipo === 'plantilla' ? `Plantilla: ${h.origenDia}` : `Reporte del día`;
+      return `
+        <div class="hist-rep-card">
+          <div class="hist-rep-info">
+            <strong>${origen}</strong>
+            <div class="hist-rep-meta">Turno: ${h.turnoRango || '—'} · Supervisor: ${h.supervisor || '—'} · Operador: ${h.operador || '—'}</div>
+            <div class="hist-rep-meta">${h.piazzas.length} Piazza(s) · ${totalFilas} trabajador(es) · Enviado: ${new Date(h.archivadoEn).toLocaleString('es-EC')}</div>
+          </div>
+          <div class="hist-rep-actions">
+            <button class="icon-btn" data-id="${h.id}" data-action="ver" title="Ver detalle">👁️</button>
+            <button class="icon-btn" data-id="${h.id}" data-action="editar" title="Editar">✎</button>
+            <button class="icon-btn" data-id="${h.id}" data-action="exportar" title="Exportar esta Piazza/reporte">🖨️</button>
+            <button class="icon-btn del" data-id="${h.id}" data-action="del" title="Eliminar del historial">🗑</button>
+          </div>
         </div>
-        <div class="hist-rep-actions">
-          <button class="icon-btn" data-id="${h.id}" data-action="ver" title="Ver detalle">👁️</button>
-          <button class="icon-btn del" data-id="${h.id}" data-action="del" title="Eliminar del historial">🗑</button>
+      `;
+    }).join('');
+
+    return `
+      <div class="hist-grupo-fecha">
+        <div class="hist-grupo-header" data-clave="${clave}">
+          <span class="hist-grupo-flecha">${abierto ? '▼' : '▶'}</span>
+          <div class="hist-grupo-titulo">
+            <strong>${labelFecha}</strong>
+            <div class="hist-rep-meta">${totalReportes} reporte(s)${conNovedades ? ' &nbsp;⚠️ Con novedades' : ''}</div>
+          </div>
+          <button class="btn-mini hist-export-dia" data-clave="${clave}" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">⬇ Exportar día</button>
+        </div>
+        <div class="hist-grupo-body" style="${abierto ? '' : 'display:none;'}">
+          ${filasHtml}
         </div>
       </div>
     `;
   }).join('');
 
+  area.querySelectorAll('.hist-grupo-header').forEach(h => {
+    h.addEventListener('click', (e) => {
+      if(e.target.closest('.hist-export-dia')) return;
+      const clave = h.dataset.clave;
+      historialGruposAbiertos[clave] = !historialGruposAbiertos[clave];
+      renderHistorialRepLista();
+    });
+  });
+  area.querySelectorAll('.hist-export-dia').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportarDiaHistorial(btn.dataset.clave);
+    });
+  });
   area.querySelectorAll('[data-action="ver"]').forEach(btn => {
     btn.addEventListener('click', () => verHistorialRepDetalle(btn.dataset.id));
+  });
+  area.querySelectorAll('[data-action="editar"]').forEach(btn => {
+    btn.addEventListener('click', () => editarHistorialRepDetalle(btn.dataset.id));
+  });
+  area.querySelectorAll('[data-action="exportar"]').forEach(btn => {
+    btn.addEventListener('click', () => exportarHistorialIndividual(btn.dataset.id));
   });
   area.querySelectorAll('[data-action="del"]').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -3094,7 +3366,7 @@ function verHistorialRepDetalle(id){
       <tbody>`;
     pg.filas.forEach(f => {
       const nombre = f.empleadoId === '__manual__' ? (f.nombreManual || '—') : ((empleados.find(e => e.id === f.empleadoId) || {}).nombres ? `${empleados.find(e => e.id === f.empleadoId).nombres} ${empleados.find(e => e.id === f.empleadoId).apellidos}` : '—');
-      bodyHtml += `<tr>
+      bodyHtml += `<tr class="${claseFilaSegunTipo(f.tipo)}">
         <td>${nombre}</td>
         <td>${f.ingreso || '—'}</td>
         <td>${f.salida || '—'}</td>
@@ -3109,6 +3381,119 @@ function verHistorialRepDetalle(id){
 
   document.getElementById('historial-rep-modal-body').innerHTML = bodyHtml;
   document.getElementById('historial-rep-modal').classList.add('show');
+}
+
+function editarHistorialRepDetalle(id){
+  const h = historialReportes.find(x => x.id === id);
+  if(!h) return;
+
+  const origen = h.origenTipo === 'plantilla' ? `Plantilla semanal: ${h.origenDia}` : `Fecha: ${formatDate(h.fecha)}`;
+  document.getElementById('historial-rep-modal-title').textContent = `Editando — ${origen}`;
+
+  let bodyHtml = '';
+  h.piazzas.forEach(pg => {
+    const color = PIAZZA_COLORES[pg.nombre] || '#7a8a95';
+    bodyHtml += `<div style="background:${color}; color:#fff; font-weight:800; text-align:center; padding:8px; border-radius:10px; margin-bottom:6px; text-transform:uppercase; font-size:12.5px;">${pg.nombre}</div>`;
+    bodyHtml += `<table class="rep-table" style="margin-bottom:16px;">
+      <thead><tr><th>Nombres</th><th>Ingreso</th><th>Salida</th><th>Horario</th><th>Tipo</th><th>Observación</th><th>Impacto</th></tr></thead>
+      <tbody>`;
+    pg.filas.forEach(f => {
+      aplicarAutoDeteccion(f);
+      const nombre = f.empleadoId === '__manual__' ? (f.nombreManual || '—') : ((empleados.find(e => e.id === f.empleadoId) || {}).nombres ? `${empleados.find(e => e.id === f.empleadoId).nombres} ${empleados.find(e => e.id === f.empleadoId).apellidos}` : '—');
+      const impacto = computeImpacto(f);
+      const impactoHtml = impacto.tipo === 'favor'
+        ? `<span class="rep-impacto-favor">+${impacto.horas}h</span>`
+        : (impacto.tipo === 'contra' ? `<span class="rep-impacto-contra">-${impacto.horas}h</span>` : '');
+      bodyHtml += `<tr class="${claseFilaSegunTipo(f.tipo)}" data-piazza-id="${pg.id}" data-fila-id="${f.id}">
+        <td>${nombre}</td>
+        <td><input type="time" class="hist-edit-f" data-campo="ingreso" value="${f.ingreso || ''}"></td>
+        <td><input type="time" class="hist-edit-f" data-campo="salida" value="${f.salida || ''}"></td>
+        <td><input type="text" class="hist-edit-f" data-campo="horario" value="${f.horario || ''}"></td>
+        <td><select class="hist-edit-f" data-campo="tipo">
+          <option value="">—</option>
+          ${TIPOS_OBS.map(t => `<option value="${t}" ${f.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select></td>
+        <td><input type="text" class="hist-edit-f" data-campo="detalle" value="${f.detalle || ''}"></td>
+        <td class="rep-impacto-cell">${impactoHtml}</td>
+      </tr>`;
+    });
+    bodyHtml += '</tbody></table>';
+  });
+  bodyHtml += `<div style="text-align:center; margin-top:10px;">
+    <button class="btn-mini" id="btn-guardar-edicion-historial" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar cambios</button>
+  </div>
+  <div style="font-size:12px; color:var(--ink-soft); text-align:center; margin-top:8px;">
+    Nota: los cambios aquí solo corrigen este registro archivado — no vuelven a sincronizarse con "Atrasos vs Horas a favor" (esa vinculación pertenece al reporte original).
+  </div>`;
+
+  document.getElementById('historial-rep-modal-body').innerHTML = bodyHtml;
+  document.getElementById('historial-rep-modal').classList.add('show');
+
+  document.getElementById('historial-rep-modal-body').querySelectorAll('.hist-edit-f').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const tr = e.target.closest('tr');
+      const pg = h.piazzas.find(p => p.id === tr.dataset.piazzaId);
+      const fila = pg.filas.find(f => f.id === tr.dataset.filaId);
+      fila[e.target.dataset.campo] = e.target.value;
+      aplicarAutoDeteccion(fila);
+
+      tr.className = claseFilaSegunTipo(fila.tipo);
+      const tipoSel = tr.querySelector('[data-campo="tipo"]');
+      if(tipoSel) tipoSel.value = fila.tipo || '';
+      const impacto = computeImpacto(fila);
+      tr.querySelector('.rep-impacto-cell').innerHTML = impacto.tipo === 'favor'
+        ? `<span class="rep-impacto-favor">+${impacto.horas}h</span>`
+        : (impacto.tipo === 'contra' ? `<span class="rep-impacto-contra">-${impacto.horas}h</span>` : '');
+    });
+  });
+
+  document.getElementById('btn-guardar-edicion-historial').addEventListener('click', async () => {
+    await saveHistorialReportes();
+    document.getElementById('historial-rep-modal').classList.remove('show');
+    renderHistorialRepLista();
+    showToast('Cambios guardados en el historial.');
+  });
+}
+
+function exportarHistorialIndividual(id){
+  const h = historialReportes.find(x => x.id === id);
+  if(!h || h.piazzas.length === 0){
+    showToast('Este reporte no tiene Piazzas para exportar.');
+    return;
+  }
+  const lista = document.getElementById('export-piazzas-lista');
+  lista.innerHTML = h.piazzas.map(pg => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" class="export-piazza-check" value="${pg.nombre}" checked>
+      ${pg.nombre} <span style="color:var(--ink-soft);">(${pg.filas.length} trabajador${pg.filas.length === 1 ? '' : 'es'})</span>
+    </label>
+  `).join('');
+  document.getElementById('export-piazzas-modal').dataset.historialId = id;
+  document.getElementById('export-piazzas-modal').classList.add('show');
+}
+
+function exportarDiaHistorial(clave){
+  const items = historialReportes.filter(h => (h.fecha || 'sin-fecha') === clave);
+  if(items.length === 0){
+    showToast('No hay reportes para exportar ese día.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  items.forEach((h, i) => {
+    if(i > 0) doc.addPage();
+    const tituloExtra = h.origenTipo === 'plantilla' ? `Plantilla semanal fija: ${h.origenDia}` : null;
+    agregarPaginaReporteAlPdf(doc, {
+      piazzas: h.piazzas,
+      tituloExtra,
+      fecha: h.fecha,
+      turnoRango: h.turnoRango,
+      supervisor: h.supervisor,
+      operador: h.operador
+    });
+  });
+  const nombreArchivo = clave === 'sin-fecha' ? 'Historial_sin_fecha.pdf' : `Historial_${clave}.pdf`;
+  doc.save(nombreArchivo);
 }
 
 document.getElementById('btn-close-historial-rep').addEventListener('click', () => {
@@ -3174,7 +3559,14 @@ async function copiarPlantillaDesde(diaOrigen){
     filas: pg.filas.map(f => {
       const nuevaFila = {
         ...f,
-        id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+        id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+        // Ingreso/Salida/Tipo/Horas/Observación are that OTHER day's real
+        // attendance — they don't belong on a different day. Only the
+        // roster (who + their schedule) is what a template copy should
+        // carry over; use "Limpiar ingresos/salidas/novedades" wording as
+        // the mental model here too.
+        ingreso: '', salida: '', tipo: '', horas: 0, horasH: 0, horasM: 0, detalle: '',
+        _atrasoMin: 0, _salidaTempranoMin: 0
       };
       // The whole point of copying to a different day is that the roster
       // repeats but the schedule doesn't — recalculate Horario for the day
@@ -3192,10 +3584,11 @@ async function copiarPlantillaDesde(diaOrigen){
   }));
 
   rep.piazzas = piazzasCopiadas;
-  await saveReporteActual();
+  await sincronizarTodasLasFilas(rep);
+  await Promise.all([saveReporteActual(), saveEmpleados()]);
   renderReporteTable();
   document.getElementById('copiar-plantilla-modal').classList.remove('show');
-  showToast(`Copiado desde "${origenLabel}".`);
+  showToast(`Copiado desde "${origenLabel}". Se conservó el personal y su horario; ingresos, salidas y novedades quedaron en blanco.`);
 }
 
 // ---- Backup export / import ----
@@ -3973,6 +4366,15 @@ function formatDate(d){
   const parts = d.split('-');
   if(parts.length !== 3) return d;
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function formatDateLong(d){
+  if(!d) return '—';
+  const date = new Date(d + 'T00:00:00');
+  if(isNaN(date.getTime())) return formatDate(d);
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${dias[date.getDay()]} ${date.getDate()}-${meses[date.getMonth()]}-${String(date.getFullYear()).slice(2)}`;
 }
 
 function isDayLibre(dayKey){
