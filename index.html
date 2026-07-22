@@ -1153,12 +1153,17 @@
   .att-table.cols-horas-edit th:nth-child(4), .att-table.cols-horas-edit td:nth-child(4){ width: 46%; }
   .att-table.cols-horas-edit th:nth-child(5), .att-table.cols-horas-edit td:nth-child(5){ width: 8%; }
 
-  .att-table .del-row{
+  .att-table .del-row, .att-table .edit-row{
     border:none;
     background:none;
-    color: var(--peach-deep);
     cursor:pointer;
     font-size: 14px;
+    padding: 2px 4px;
+  }
+  .att-table .del-row{ color: var(--peach-deep); }
+  .att-table .edit-row{ color: var(--ink-soft); }
+  .att-table td:last-child{
+    white-space: nowrap;
   }
 
   .stat-cards{
