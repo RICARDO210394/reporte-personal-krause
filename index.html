@@ -4263,13 +4263,13 @@ function renderHistorial(emp){
 
   area.innerHTML = `
     <div class="section-band section-band-sub">Atrasos</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${atrasosRows}</tbody></table>
+    <table class="att-table cols-edit6"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${atrasosRows}</tbody></table>
 
     <div class="section-band section-band-sub">Salidas antes de tiempo</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${salidasRows}</tbody></table>
+    <table class="att-table cols-edit6"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th><th></th></tr></thead><tbody>${salidasRows}</tbody></table>
 
     <div class="section-band section-band-sub">Horas a favor y en contra</div>
-    <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th><th></th></tr></thead><tbody>${horasRows}</tbody></table>
+    <table class="att-table cols-horas-edit"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th><th></th></tr></thead><tbody>${horasRows}</tbody></table>
     <div class="balance-badge ${cls}">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
 
     <div class="section-band section-band-sub" style="margin-top:18px;">Comportamiento</div>
