@@ -1457,37 +1457,37 @@
           <label for="f-piazza-enrolado">Piazza donde está enrolado</label>
           <select id="f-piazza-enrolado">
             <option value="">Seleccionar...</option>
+            <option>Logística</option>
+            <option>Jardinero</option>
             <option>Villa Club</option>
             <option>FCG</option>
             <option>La Joya</option>
             <option>Villas del Rey</option>
+            <option>Ciudad Celeste</option>
+            <option>Samborondón</option>
+            <option>Murano</option>
             <option>Ceibos</option>
             <option>Bosques</option>
-            <option>Ciudad Celeste</option>
-            <option>Murano</option>
-            <option>Samborondón</option>
-            <option>Belén del Norte</option>
             <option>Cuadrilla</option>
-            <option>Logística</option>
-            <option>Jardinero</option>
+            <option>Belén del Norte</option>
           </select>
 
           <label for="f-piazza">Piazza donde trabaja</label>
           <select id="f-piazza">
             <option value="">Seleccionar...</option>
+            <option>Logística</option>
+            <option>Jardinero</option>
             <option>Villa Club</option>
             <option>FCG</option>
             <option>La Joya</option>
             <option>Villas del Rey</option>
+            <option>Ciudad Celeste</option>
+            <option>Samborondón</option>
+            <option>Murano</option>
             <option>Ceibos</option>
             <option>Bosques</option>
-            <option>Ciudad Celeste</option>
-            <option>Murano</option>
-            <option>Samborondón</option>
-            <option>Belén del Norte</option>
             <option>Cuadrilla</option>
-            <option>Logística</option>
-            <option>Jardinero</option>
+            <option>Belén del Norte</option>
           </select>
 
           <div class="row2">
@@ -1908,7 +1908,12 @@
 </div>
 
 <script>
-const PIAZZAS = ["Villa Club","FCG","La Joya","Villas del Rey","Ceibos","Bosques","Ciudad Celeste","Murano","Samborondón","Belén del Norte","Cuadrilla","Logística","Jardinero"];
+const PIAZZAS = ["Logística","Jardinero","Villa Club","FCG","La Joya","Villas del Rey","Ciudad Celeste","Samborondón","Murano","Ceibos","Bosques","Cuadrilla","Belén del Norte"];
+
+function ordenPiazza(nombre){
+  const idx = PIAZZAS.indexOf(nombre);
+  return idx === -1 ? 999 : idx; // anything not in the list (old/unknown names) sorts last
+}
 const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 const SEMANAS_POR_MES = [5,4,4,5,4,4,5,4,4,5,4,4]; // sums to 52
 
@@ -2417,19 +2422,19 @@ document.getElementById('btn-delete-cal').addEventListener('click', async () => 
 // ---- Reporte Diario de Mantenimiento module ----
 
 const PIAZZA_COLORES = {
+  "Logística": "#5a6b8c",
+  "Jardinero": "#4c8c5a",
   "Villa Club": "#e0a92e",
   "FCG": "#9aa3ab",
   "La Joya": "#2f6b3c",
   "Villas del Rey": "#4a7ebc",
+  "Ciudad Celeste": "#1eb8cf",
+  "Samborondón": "#d97a3a",
+  "Murano": "#8fb3d9",
   "Ceibos": "#6a9c5e",
   "Bosques": "#9aa3ab",
-  "Ciudad Celeste": "#1eb8cf",
-  "Murano": "#8fb3d9",
-  "Samborondón": "#d97a3a",
-  "Belén del Norte": "#d9c33a",
   "Cuadrilla": "#a374c2",
-  "Logística": "#5a6b8c",
-  "Jardinero": "#4c8c5a"
+  "Belén del Norte": "#d9c33a"
 };
 
 const TIPOS_OBS = ["Atraso","Salida antes de tiempo","Novedad","Permiso","Horas extras","Otros"];
@@ -3739,6 +3744,9 @@ function construirPlantillaGeneradaParaDia(diaKey, empleadosMantenimiento){
     if(!horario || horario === 'Rotativo') return;
     const piazzaDelDia = getPiazzaForEmpleadoDiaKey(emp, diaKey);
     if(!piazzaDelDia) return;
+    // Belén del Norte is placed by hand, on purpose — never auto-fill it
+    // here, even if someone's registered Piazza happens to be Belén.
+    if(piazzaDelDia === 'Belén del Norte') return;
     if(!grupos.has(piazzaDelDia)) grupos.set(piazzaDelDia, []);
     grupos.get(piazzaDelDia).push({
       id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -3747,11 +3755,13 @@ function construirPlantillaGeneradaParaDia(diaKey, empleadosMantenimiento){
     });
   });
 
-  const piazzas = [...grupos.entries()].map(([nombre, filas]) => ({
-    id: 'piazzarep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    nombre,
-    filas
-  }));
+  const piazzas = [...grupos.entries()]
+    .sort((a, b) => ordenPiazza(a[0]) - ordenPiazza(b[0]))
+    .map(([nombre, filas]) => ({
+      id: 'piazzarep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      nombre,
+      filas
+    }));
 
   // Keep whatever Fecha/Turno/Supervisor/Operador that day already had,
   // if it existed — only the roster (piazzas/filas) gets regenerated.
@@ -5075,6 +5085,30 @@ let consecutiveLoadErrors = 0;
 
 let ultimoEmpleadosRaw = null;
 
+// One-time-per-employee cleanup: this Piazza is called "FCG", but a
+// previous version briefly renamed it to "Finca". Renames it back
+// wherever it might be sitting in already-saved data (main Piazza fields,
+// and any per-day Piazza override in turno), and persists the fix so it
+// only ever needs to run once per employee.
+async function migrarNombrePiazzaFCGaFinca(){
+  let huboCambio = false;
+  empleados.forEach(emp => {
+    if(emp.piazza === 'Finca'){ emp.piazza = 'FCG'; huboCambio = true; }
+    if(emp.piazzaEnrolado === 'Finca'){ emp.piazzaEnrolado = 'FCG'; huboCambio = true; }
+    if(emp.turno && typeof emp.turno === 'object'){
+      Object.keys(emp.turno).forEach(diaKey => {
+        const dia = emp.turno[diaKey];
+        if(dia && typeof dia === 'object' && dia.piazza === 'Finca'){
+          dia.piazza = 'FCG';
+          huboCambio = true;
+        }
+      });
+    }
+  });
+  if(huboCambio) await saveEmpleados();
+  return huboCambio;
+}
+
 async function loadEmpleados(){
   if(syncLocked) return;
   try{
@@ -5096,14 +5130,15 @@ async function loadEmpleados(){
     ultimoEmpleadosRaw = rawValue;
     hasLoadedOnce = true;
     consecutiveLoadErrors = 0;
-    if(huboCambios) renderList();
+    const huboMigracion = await migrarNombrePiazzaFCGaFinca();
+    if(huboCambios || huboMigracion) renderList();
     // The Reporte Diario and Vista de Perfil worker dropdowns depend on the
     // employee list too; refresh them only when the list actually changed,
     // and only if their tab is currently open.
-    if(huboCambios && document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
+    if((huboCambios || huboMigracion) && document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
       renderReporteTable();
     }
-    if(huboCambios && document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
+    if((huboCambios || huboMigracion) && document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
       const piazzaSel = document.getElementById('perfil-piazza');
       if(piazzaSel && piazzaSel.value) refreshPerfilEmpleadoOptions();
     }
@@ -5200,7 +5235,7 @@ function renderList(){
   let html = '';
   depNames.forEach(dep => {
     const piazzasDeDep = porDepto[dep];
-    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => a.localeCompare(b));
+    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => ordenPiazza(a) - ordenPiazza(b) || a.localeCompare(b));
     const totalDep = piazzaNames.reduce((s,p) => s + piazzasDeDep[p].length, 0);
 
     html += `<div class="group-dep-header dep-${dep}">${dep} <span class="group-count">${totalDep}</span></div>`;
@@ -5287,7 +5322,7 @@ function exportListaPdf(){
   let y = 30;
   depNames.forEach(dep => {
     const piazzasDeDep = porDepto[dep];
-    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => a.localeCompare(b));
+    const piazzaNames = Object.keys(piazzasDeDep).sort((a,b) => ordenPiazza(a) - ordenPiazza(b) || a.localeCompare(b));
 
     if(y > 270){ doc.addPage(); y = 20; }
     doc.setFontSize(12);
