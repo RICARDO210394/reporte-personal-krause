@@ -1883,7 +1883,7 @@
     <h2 class="hoja-title" style="font-size:16px;" id="cal-modal-title">Calificación</h2>
     <label>Calificación (0 a 10)</label>
     <input type="number" min="0" max="10" step="1" id="cal-score" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-size:14px; margin-bottom:12px;">
-    <label>Comentario (obligatorio)</label>
+    <label>Comentario (opcional)</label>
     <textarea id="cal-comentario" placeholder="Explica el motivo de esta calificación..." style="width:100%; min-height:80px; border-radius:10px; border:1.5px solid var(--line); padding:10px 12px; font-family:inherit; font-size:13px;"></textarea>
     <div class="err" id="cal-err-msg"></div>
     <div class="hoja-actions">
@@ -2388,10 +2388,6 @@ document.getElementById('btn-save-cal').addEventListener('click', async () => {
 
   if(document.getElementById('cal-score').value === '' || isNaN(score) || score < 0 || score > 10){
     errEl.textContent = 'Ingresa una calificación válida entre 0 y 10.';
-    return;
-  }
-  if(!comentario){
-    errEl.textContent = 'El comentario es obligatorio.';
     return;
   }
   errEl.textContent = '';
