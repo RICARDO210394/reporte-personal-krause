@@ -1739,6 +1739,7 @@
         <div style="margin: 16px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <span class="btn-mini" id="btn-add-piazza-rep">＋ Agregar Piazza</span>
           <span class="btn-mini" id="btn-copiar-plantilla" style="background:#6a9c5e; color:#fff; border-color:#6a9c5e;">📋 Copiar de otro día</span>
+          <span class="btn-mini" id="btn-generar-plantillas" style="background:#8a5cb8; color:#fff; border-color:#8a5cb8;">🪄 Generar plantilla automáticamente</span>
           <span class="btn-mini" id="btn-guardar-rep" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar</span>
           <span class="btn-mini" id="btn-enviar-historial" style="background:#3a3f6b; color:#fff; border-color:#3a3f6b;">📤 Enviar al historial</span>
           <span class="btn-mini" id="btn-limpiar-rep" style="background:var(--peach); color:#7a3a20; border-color:var(--peach-deep);">🧹 Limpiar ingresos/salidas/novedades</span>
@@ -1803,6 +1804,22 @@
       Esto reemplaza lo que ya tengas aquí.
     </p>
     <div id="copiar-plantilla-opciones" class="rep-mode-switch"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="generar-plantillas-modal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-generar-plantillas">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;">Generar plantilla automáticamente</h2>
+    <p style="font-size:13px; color:var(--ink-soft); margin:6px 0 14px;">
+      Elige qué día quieres armar (o rearmar) usando el horario y la Piazza que ya tiene cada trabajador de Mantenimiento. Esto reemplaza las Piazzas y trabajadores del día elegido.
+    </p>
+    <div id="generar-plantillas-opciones" class="rep-mode-switch"></div>
+    <div style="margin-top:14px; text-align:center;">
+      <span class="btn-mini" id="btn-generar-todos-los-dias" style="background:#8a5cb8; color:#fff; border-color:#8a5cb8;">Todos los días</span>
+    </div>
   </div>
 </div>
 
@@ -2448,10 +2465,52 @@ async function loadPlantillasSemanal(){
   }
 }
 
-async function savePlantillasSemanal(){
-  reportesSyncLocked = true;
+let colaGuardadoPlantillas = Promise.resolve();
+function savePlantillasSemanal(){
+  // Chain every save after whatever is already pending, so two saves can
+  // never run concurrently and race each other's fetch-merge-write cycle
+  // (which could otherwise still lose a day even with the snapshot fix
+  // above, if two saves overlapped in time).
+  colaGuardadoPlantillas = colaGuardadoPlantillas.then(() => _savePlantillasSemanalAhora());
+  return colaGuardadoPlantillas;
+}
+
+async function guardarPlantillaDeUnDia(diaKey, plantillaObj){
+  // Merge with whatever is on the server right now before writing. All 7
+  // weekday plantillas share this same array — only overwrite the ONE day
+  // being saved; every OTHER day comes straight from the server's latest
+  // copy, never from this session's full in-memory array, which can hold
+  // stale versions of days this session loaded once but never touched.
+  let servidorActual = [];
   try{
-    await window.storage.set('plantillas_semanales', JSON.stringify(plantillasSemanal), true);
+    const result = await window.storage.get('plantillas_semanales', true);
+    servidorActual = result ? JSON.parse(result.value) : [];
+  } catch(e){ /* nothing saved yet on the server — that's fine */ }
+
+  const fusionado = [...servidorActual];
+  if(plantillaObj){
+    const idx = fusionado.findIndex(s => s.dia === diaKey);
+    if(idx >= 0) fusionado[idx] = plantillaObj;
+    else fusionado.push(plantillaObj);
+  }
+  plantillasSemanal = fusionado;
+  await window.storage.set('plantillas_semanales', JSON.stringify(plantillasSemanal), true);
+}
+
+async function _savePlantillasSemanalAhora(){
+  reportesSyncLocked = true;
+  // Snapshot which day and which exact plantilla object we're saving RIGHT
+  // NOW, before any "await" below. diaSemanaActual is shared, mutable
+  // global state — if the person clicks through Lunes → Martes → Miércoles
+  // quickly, a second call to this function can reassign diaSemanaActual
+  // WHILE the first call is still awaiting its own fetch. Reading the
+  // global again after that point would make the first call save the
+  // wrong day (or the right day's data under someone else's day), which is
+  // exactly what was causing plantillas to vanish or get mixed up.
+  const diaGuardado = diaSemanaActual;
+  const plantillaGuardada = plantillasSemanal.find(p => p.dia === diaGuardado);
+  try{
+    await guardarPlantillaDeUnDia(diaGuardado, plantillaGuardada);
   } catch(e){
     showToast('Error al guardar la plantilla. Intenta de nuevo.');
     console.error(e);
@@ -2478,9 +2537,39 @@ async function loadReportesMantenimiento(){
   }
 }
 
-async function saveReportesMantenimiento(){
+let colaGuardadoReportes = Promise.resolve();
+function saveReportesMantenimiento(){
+  colaGuardadoReportes = colaGuardadoReportes.then(() => _saveReportesMantenimientoAhora());
+  return colaGuardadoReportes;
+}
+
+async function _saveReportesMantenimientoAhora(){
   reportesSyncLocked = true;
+  // Same snapshot-before-await fix as savePlantillasSemanal — capture
+  // which report we're saving before any await, so a concurrent call
+  // (e.g. quickly switching between dates) can't make this save target
+  // the wrong report.
+  const idGuardado = reporteActualId;
+  const reporteGuardado = reportesMantenimiento.find(r => r.id === idGuardado);
   try{
+    // Only overwrite the ONE report actually being edited with the
+    // server's latest copy of everything else, instead of writing this
+    // session's full (possibly stale) local array over every other
+    // date's report.
+    let servidorActual = [];
+    try{
+      const result = await window.storage.get('reportes_mantenimiento', true);
+      servidorActual = result ? JSON.parse(result.value) : [];
+    } catch(e){ /* nothing saved yet on the server — that's fine */ }
+
+    const fusionado = [...servidorActual];
+    if(reporteGuardado){
+      const idx = fusionado.findIndex(s => s.id === idGuardado);
+      if(idx >= 0) fusionado[idx] = reporteGuardado;
+      else fusionado.push(reporteGuardado);
+    }
+    reportesMantenimiento = fusionado;
+
     await window.storage.set('reportes_mantenimiento', JSON.stringify(reportesMantenimiento), true);
   } catch(e){
     showToast('Error al guardar el reporte. Intenta de nuevo.');
@@ -3183,6 +3272,7 @@ document.getElementById('btn-guardar-rep').addEventListener('click', async () =>
 // ---- Historial de Reportes de Mantenimiento ----
 
 let historialReportes = [];
+let historialIdsEliminados = new Set();
 let historialReportesLoaded = false;
 
 async function loadHistorialReportes(){
@@ -3201,9 +3291,31 @@ async function initHistorialRepTab(){
   renderHistorialRepLista();
 }
 
-async function saveHistorialReportes(){
+let colaGuardadoHistorial = Promise.resolve();
+function saveHistorialReportes(){
+  colaGuardadoHistorial = colaGuardadoHistorial.then(() => _saveHistorialReportesAhora());
+  return colaGuardadoHistorial;
+}
+
+async function _saveHistorialReportesAhora(){
   reportesSyncLocked = true;
   try{
+    // Same protection as plantillas/reportes: merge with the server's
+    // latest list before writing, so saving/editing one historial entry
+    // can't erase another one someone else archived or edited meanwhile.
+    let servidorActual = [];
+    try{
+      const result = await window.storage.get('historial_reportes', true);
+      servidorActual = result ? JSON.parse(result.value) : [];
+    } catch(e){ /* nothing saved yet on the server — that's fine */ }
+
+    const idsLocales = new Set(historialReportes.map(h => h.id));
+    const fusionado = [
+      ...servidorActual.filter(s => !idsLocales.has(s.id) && !historialIdsEliminados.has(s.id)),
+      ...historialReportes
+    ];
+    historialReportes = fusionado;
+
     await window.storage.set('historial_reportes', JSON.stringify(historialReportes), true);
   } catch(e){
     showToast('Error al guardar el historial. Intenta de nuevo.');
@@ -3386,6 +3498,7 @@ function renderHistorialRepLista(){
   area.querySelectorAll('[data-action="del"]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if(!confirm('¿Eliminar este reporte del historial? Esta acción no se puede deshacer.')) return;
+      historialIdsEliminados.add(btn.dataset.id);
       historialReportes = historialReportes.filter(h => h.id !== btn.dataset.id);
       await saveHistorialReportes();
       renderHistorialRepLista();
@@ -3611,6 +3724,137 @@ document.getElementById('btn-copiar-plantilla').addEventListener('click', async 
   });
 
   document.getElementById('copiar-plantilla-modal').classList.add('show');
+});
+
+function construirPlantillaGeneradaParaDia(diaKey, empleadosMantenimiento){
+  const grupos = new Map();
+  empleadosMantenimiento.forEach(emp => {
+    const horario = getHorarioForEmpleadoDiaKey(emp, diaKey);
+    // Someone off ("Libre") that day should still show up in the roster
+    // — just with "Libre" sitting in the Horario column, so the
+    // supervisor can see the full team at a glance. Only skip someone
+    // with no day-specific schedule at all to hook them under (Rotativo
+    // has no fixed daily slot, and a truly blank horario has nothing to
+    // show either).
+    if(!horario || horario === 'Rotativo') return;
+    const piazzaDelDia = getPiazzaForEmpleadoDiaKey(emp, diaKey);
+    if(!piazzaDelDia) return;
+    if(!grupos.has(piazzaDelDia)) grupos.set(piazzaDelDia, []);
+    grupos.get(piazzaDelDia).push({
+      id: 'fila_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      empleadoId: emp.id,
+      ingreso: '', salida: '', horario, tipo: '', horas: 0, horasH: 0, horasM: 0, detalle: ''
+    });
+  });
+
+  const piazzas = [...grupos.entries()].map(([nombre, filas]) => ({
+    id: 'piazzarep_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    nombre,
+    filas
+  }));
+
+  // Keep whatever Fecha/Turno/Supervisor/Operador that day already had,
+  // if it existed — only the roster (piazzas/filas) gets regenerated.
+  const existente = plantillasSemanal.find(p => p.dia === diaKey);
+  return {
+    dia: diaKey,
+    fecha: existente ? existente.fecha : '',
+    turnoRango: existente ? existente.turnoRango : '',
+    supervisor: existente ? existente.supervisor : 'RISKMNG',
+    operador: existente ? existente.operador : '',
+    piazzas
+  };
+}
+
+async function generarPlantillasParaDias(diasAGenerar){
+  const empleadosMantenimiento = empleados.filter(e => e.departamento === 'Mantenimiento');
+  if(empleadosMantenimiento.length === 0){
+    showToast('No hay trabajadores de Mantenimiento registrados todavía para armar las plantillas.');
+    return;
+  }
+
+  diasAGenerar.forEach(diaKey => {
+    const generada = construirPlantillaGeneradaParaDia(diaKey, empleadosMantenimiento);
+    const idx = plantillasSemanal.findIndex(p => p.dia === diaKey);
+    if(idx >= 0) plantillasSemanal[idx] = generada;
+    else plantillasSemanal.push(generada);
+  });
+
+  // When regenerating just one day, save it directly through the same
+  // merge-safe path — without touching diaSemanaActual, so this never
+  // switches whatever day the person currently has open on screen.
+  // When regenerating every day at once, that's the one case meant to
+  // touch all 7, so write the whole array directly instead.
+  if(diasAGenerar.length === 1){
+    const diaKey = diasAGenerar[0];
+    reportesSyncLocked = true;
+    try{
+      await guardarPlantillaDeUnDia(diaKey, plantillasSemanal.find(p => p.dia === diaKey));
+    } catch(e){
+      showToast('Error al guardar la plantilla generada. Intenta de nuevo.');
+      console.error(e);
+    } finally {
+      setTimeout(() => { reportesSyncLocked = false; }, 3000);
+    }
+  } else {
+    reportesSyncLocked = true;
+    try{
+      await window.storage.set('plantillas_semanales', JSON.stringify(plantillasSemanal), true);
+    } catch(e){
+      showToast('Error al guardar las plantillas generadas. Intenta de nuevo.');
+      console.error(e);
+    } finally {
+      setTimeout(() => { reportesSyncLocked = false; }, 3000);
+    }
+  }
+
+  // Only refresh what's on screen if the day(s) just regenerated include
+  // whatever the person currently has open — otherwise leave their view
+  // completely undisturbed.
+  if(modoReporte === 'plantilla' && diasAGenerar.includes(diaSemanaActual)){
+    renderReporteTable();
+  }
+  showToast(diasAGenerar.length === 1
+    ? 'Plantilla generada automáticamente según el horario y Piazza de cada trabajador.'
+    : 'Las 7 plantillas se armaron automáticamente según el horario y Piazza de cada trabajador.');
+}
+
+document.getElementById('btn-generar-plantillas').addEventListener('click', async () => {
+  if(!plantillasLoaded) await loadPlantillasSemanal();
+
+  const empleadosMantenimiento = empleados.filter(e => e.departamento === 'Mantenimiento');
+  if(empleadosMantenimiento.length === 0){
+    showToast('No hay trabajadores de Mantenimiento registrados todavía para armar las plantillas.');
+    return;
+  }
+
+  const area = document.getElementById('generar-plantillas-opciones');
+  area.innerHTML = DIAS_SEMANA_PLANTILLA.map(d => `<span class="btn-mini" data-dia="${d.key}">${d.label}</span>`).join('');
+  area.querySelectorAll('[data-dia]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!confirm(`Esto arma (o rearma) la plantilla del día ${btn.textContent} usando el horario y la Piazza que ya tiene registrado cada trabajador de Mantenimiento. Si ese día ya tenía datos, se reemplazan. ¿Continuar?`)) return;
+      document.getElementById('generar-plantillas-modal').classList.remove('show');
+      await generarPlantillasParaDias([btn.dataset.dia]);
+    });
+  });
+
+  document.getElementById('generar-plantillas-modal').classList.add('show');
+});
+
+document.getElementById('btn-generar-todos-los-dias').addEventListener('click', async () => {
+  if(!confirm(
+    `Esto arma (o rearma) las 7 plantillas semanales (Lunes a Domingo) usando el horario y la Piazza que ya tiene registrado cada uno de los trabajadores de Mantenimiento.\n\n` +
+    `Si un día ya tenía una plantilla con datos, se reemplaza por la nueva versión generada automáticamente.\n\n¿Continuar?`
+  )) return;
+  document.getElementById('generar-plantillas-modal').classList.remove('show');
+  await generarPlantillasParaDias(DIAS_SEMANA_PLANTILLA.map(d => d.key));
+});
+
+document.getElementById('btn-close-generar-plantillas').addEventListener('click', () => {
+  document.getElementById('generar-plantillas-modal').classList.remove('show');
+});
+document.getElementById('generar-plantillas-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'generar-plantillas-modal') document.getElementById('generar-plantillas-modal').classList.remove('show');
 });
 
 document.getElementById('btn-close-copiar-plantilla').addEventListener('click', () => {
@@ -4829,25 +5073,37 @@ let hasLoadedOnce = false;
 
 let consecutiveLoadErrors = 0;
 
+let ultimoEmpleadosRaw = null;
+
 async function loadEmpleados(){
   if(syncLocked) return;
   try{
     const result = await window.storage.get(STORAGE_KEY, true);
-    const fetched = result ? JSON.parse(result.value) : [];
+    const rawValue = result ? result.value : '[]';
+    // The whole point of this polling loop is just to notice changes made
+    // elsewhere — if the raw data coming back is byte-for-byte the same as
+    // last time, there is nothing new to show. Skipping the re-render in
+    // that (very common) case is what was making Reporte Diario feel slow,
+    // and was closing the Nombres/Piazza dropdown out from under whoever
+    // had it open every ~4 seconds, since a full re-render replaces those
+    // <select> elements even when their contents haven't changed at all.
+    const huboCambios = rawValue !== ultimoEmpleadosRaw;
+    const fetched = JSON.parse(rawValue);
     // A save may have started while this fetch was in flight; if so, discard
     // this now-stale result instead of clobbering the data that was just saved.
     if(syncLocked) return;
     empleados = fetched;
+    ultimoEmpleadosRaw = rawValue;
     hasLoadedOnce = true;
     consecutiveLoadErrors = 0;
-    renderList();
+    if(huboCambios) renderList();
     // The Reporte Diario and Vista de Perfil worker dropdowns depend on the
-    // employee list too; refresh them if their tab is currently open so a
-    // newly registered/synced employee doesn't stay missing from view.
-    if(document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
+    // employee list too; refresh them only when the list actually changed,
+    // and only if their tab is currently open.
+    if(huboCambios && document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
       renderReporteTable();
     }
-    if(document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
+    if(huboCambios && document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
       const piazzaSel = document.getElementById('perfil-piazza');
       if(piazzaSel && piazzaSel.value) refreshPerfilEmpleadoOptions();
     }
