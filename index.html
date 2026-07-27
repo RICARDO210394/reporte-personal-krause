@@ -1124,6 +1124,7 @@
     padding: 9px 10px;
     border-bottom: 1px solid var(--line);
     overflow-wrap: break-word;
+    word-break: break-word;
   }
   /* Default 5-column layout: Fecha | col2 | col3 | Total | Motivo — used by
      Atrasos and Salidas, so their columns line up with each other. */
@@ -1840,6 +1841,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="export-meses-modal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-export-meses">✕ Cerrar</div>
+    </div>
+    <h2 class="hoja-title" style="font-size:16px;">¿Qué meses exportar?</h2>
+    <div style="margin:6px 0 12px; display:flex; gap:8px;">
+      <span class="btn-mini" id="btn-export-meses-todos">Seleccionar todos</span>
+      <span class="btn-mini" id="btn-export-meses-ninguno">Ninguno</span>
+    </div>
+    <div id="export-meses-lista" style="display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto;"></div>
+    <div style="margin-top:16px; text-align:center;">
+      <button class="btn-pdf-small" id="btn-export-meses-confirmar">🖨️ Exportar PDF</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="edit-att-modal">
   <div class="modal-box" style="max-width:460px;">
     <div class="modal-close-row">
@@ -1864,6 +1882,7 @@
       <table class="hoja-table" id="hoja-table"></table>
       <div class="hoja-photo" id="hoja-photo">📷</div>
     </div>
+    <div id="hoja-resumen-asistencia"></div>
     <div class="hoja-comentarios">
       <h3>Comentarios</h3>
       <div class="comment-log" id="comment-log"></div>
@@ -2026,14 +2045,7 @@ document.getElementById('perfil-empleado').addEventListener('change', (e) => {
   else document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
 });
 
-function renderPerfil(empId){
-  const emp = empleados.find(e => e.id === empId);
-  const content = document.getElementById('perfil-content');
-  if(!emp){
-    content.innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
-    return;
-  }
-
+function buildResumenAsistenciaHtml(emp){
   const asis = ensureAsistencia(emp);
   const promedio = computeAverage(emp);
   const promCls = promedio === null ? 'neutro' : scoreClass(promedio);
@@ -2050,6 +2062,51 @@ function renderPerfil(empId){
         <tr><td>${formatDate(r.fecha)}</td><td>${r.horaInicio || '—'}</td><td>${r.horaFin || '—'}</td><td>${formatMinutes(minutesBetween(r.horaInicio, r.horaFin))}</td><td>${r.motivo || '—'}</td></tr>
       `).join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const horasRows = asis.horas.length
+    ? [...asis.horas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => `
+        <tr>
+          <td>${formatDate(r.fecha)}</td>
+          <td style="color:${r.tipo === 'favor' ? 'var(--favor)' : 'var(--contra)'}; font-weight:700;">${r.tipo === 'favor' ? 'A favor' : 'En contra'}</td>
+          <td>${r.horas}</td>
+          <td>${r.motivo || '—'}</td>
+        </tr>
+      `).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
+  const { favor, contra, neto } = computeBalance(asis);
+  const balCls = neto > 0 ? 'favor' : (neto < 0 ? 'contra' : 'neutro');
+
+  return `
+    <div class="perfil-promedio-badge balance-badge ${promBadgeCls}">
+      Promedio semanal: ${promedio === null ? 'Sin calificaciones' : promedio}
+    </div>
+
+    <div class="section-band section-band-perfil-sub">Atrasos</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${atrasosRows}</tbody></table>
+
+    <div class="section-band section-band-perfil-sub">Salidas antes de tiempo</div>
+    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${salidasRows}</tbody></table>
+
+    <div class="section-band section-band-perfil-sub">Horas a favor / en contra</div>
+    <div class="balance-badge ${balCls}" style="margin-bottom:8px;">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
+    <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th></tr></thead><tbody>${horasRows}</tbody></table>
+  `;
+}
+
+function exportarPerfilPdf(empId){
+  const emp = empleados.find(e => e.id === empId);
+  if(!emp) return;
+  exportAttPdf(emp);
+}
+
+function renderPerfil(empId){
+  const emp = empleados.find(e => e.id === empId);
+  const content = document.getElementById('perfil-content');
+  if(!emp){
+    content.innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
+    return;
+  }
 
   const comentarios = emp.comentarios || [];
   const comportamientoHtml = comentarios.length
@@ -2083,19 +2140,17 @@ function renderPerfil(empId){
       <div class="perfil-photo">${emp.foto ? `<img src="${emp.foto}" alt="foto">` : '📷'}</div>
     </div>
 
-    <div class="perfil-promedio-badge balance-badge ${promCls === 'cal-red' ? 'contra' : promCls === 'cal-green' ? 'favor' : 'neutro'}">
-      Promedio semanal: ${promedio === null ? 'Sin calificaciones' : promedio}
-    </div>
-
-    <div class="section-band section-band-perfil-sub">Atrasos</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que debía ingresar</th><th>Hora que ingresó</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${atrasosRows}</tbody></table>
-
-    <div class="section-band section-band-perfil-sub">Salidas antes de tiempo</div>
-    <table class="att-table"><thead><tr><th>Fecha</th><th>Hora que salió</th><th>Hora que debía salir</th><th>Total</th><th>Motivo</th></tr></thead><tbody>${salidasRows}</tbody></table>
+    ${buildResumenAsistenciaHtml(emp)}
 
     <div class="section-band section-band-perfil-sub">Comportamiento</div>
     <div class="comment-log" style="max-height:220px;">${comportamientoHtml}</div>
+
+    <div style="text-align:right; margin-top:16px;">
+      <span class="btn-mini" id="btn-exportar-perfil" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">🖨️ Exportar perfil en PDF</span>
+    </div>
   `;
+
+  document.getElementById('btn-exportar-perfil').addEventListener('click', () => exportarPerfilPdf(emp.id));
 }
 
 // Tabs
@@ -2398,10 +2453,16 @@ document.getElementById('btn-save-cal').addEventListener('click', async () => {
   if(idx !== -1) emp.calificaciones[idx] = entry;
   else emp.calificaciones.push(entry);
 
-  await saveEmpleados();
+  // Update the screen and close the modal right away — the calificación
+  // already exists in memory, so there's no need to make the person wait
+  // for the whole employee list (photos included) to finish uploading
+  // before they can see it and move on. The actual save still happens,
+  // just in the background; if it fails, saveEmpleados() shows its own
+  // error toast.
   renderCalifTable();
   closeCalModal();
   showToast('Calificación guardada.');
+  saveEmpleados();
 });
 
 document.getElementById('btn-delete-cal').addEventListener('click', async () => {
@@ -4056,13 +4117,26 @@ function exportCalifPdfIndividual(empId){
 
 // ---- Exportar informe completo de Calificación Semanal en PDF ----
 
-function exportCalifPdf(){
+function exportCalifPdf(mesesSeleccionados){
+  // Default to every month if called without a selection (kept so nothing
+  // else that might call this function directly breaks).
+  const meses = mesesSeleccionados && mesesSeleccionados.length ? mesesSeleccionados : MESES.map((_, i) => i);
+
   const piazzaFilter = document.getElementById('calif-piazza-filter').value;
   const depFilter = document.getElementById('calif-dep-filter').value;
   const filtered = empleados.filter(e =>
     (!piazzaFilter || e.piazza === piazzaFilter) &&
     (!depFilter || e.departamento === depFilter)
   );
+
+  // Figure out which week numbers (1-52) belong to the chosen months.
+  const inicioSemanaPorMes = [];
+  { let acc = 1; SEMANAS_POR_MES.forEach(n => { inicioSemanaPorMes.push(acc); acc += n; }); }
+  const semanasAExportar = [];
+  meses.forEach(mesIdx => {
+    const inicio = inicioSemanaPorMes[mesIdx];
+    for(let s = inicio; s < inicio + SEMANAS_POR_MES[mesIdx]; s++) semanasAExportar.push(s);
+  });
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -4072,7 +4146,8 @@ function exportCalifPdf(){
   doc.text('Reporte de Calificación Semanal del Personal', 10, 10);
   doc.setFont(undefined, 'normal');
   doc.setFontSize(9);
-  doc.text(`Piazza: ${piazzaFilter || 'Todas'}    Departamento: ${depFilter || 'Todos'}    Generado: ${new Date().toLocaleDateString('es-EC')}`, 10, 16);
+  const mesesTxt = meses.length === 12 ? 'Todos' : meses.map(i => MESES[i]).join(', ');
+  doc.text(`Piazza: ${piazzaFilter || 'Todas'}    Departamento: ${depFilter || 'Todos'}    Meses: ${mesesTxt}    Generado: ${new Date().toLocaleDateString('es-EC')}`, 10, 16);
 
   const headRow1 = [
     { content: 'Nombres', rowSpan: 2 },
@@ -4080,22 +4155,21 @@ function exportCalifPdf(){
     { content: 'Piazza', rowSpan: 2 },
     { content: 'Prom.', rowSpan: 2 }
   ];
-  MESES.forEach((mes, i) => headRow1.push({ content: mes, colSpan: SEMANAS_POR_MES[i] }));
-  const headRow2 = [];
-  for(let s = 1; s <= 52; s++) headRow2.push(String(s));
+  meses.forEach(mesIdx => headRow1.push({ content: MESES[mesIdx], colSpan: SEMANAS_POR_MES[mesIdx] }));
+  const headRow2 = semanasAExportar.map(s => String(s));
 
   const body = filtered.map(e => {
     const avg = computeAverage(e);
     const row = [e.nombres, e.apellidos, e.piazza || '-', avg === null ? '-' : String(avg)];
-    for(let s = 1; s <= 52; s++){
+    semanasAExportar.forEach(s => {
       const cal = getCalificacion(e, s);
       row.push(cal ? String(cal.score) : '-');
-    }
+    });
     return row;
   });
 
   const columnStyles = { 0: { cellWidth: 26 }, 1: { cellWidth: 26 }, 2: { cellWidth: 18 }, 3: { cellWidth: 10 } };
-  for(let i = 0; i < 52; i++) columnStyles[4 + i] = { cellWidth: 4.4 };
+  for(let i = 0; i < semanasAExportar.length; i++) columnStyles[4 + i] = { cellWidth: 4.4 };
 
   doc.autoTable({
     startY: 21,
@@ -4119,7 +4193,38 @@ function exportCalifPdf(){
   doc.save(`Calificacion_Semanal_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-document.getElementById('btn-export-calif-pdf').addEventListener('click', exportCalifPdf);
+document.getElementById('btn-export-calif-pdf').addEventListener('click', () => {
+  const lista = document.getElementById('export-meses-lista');
+  lista.innerHTML = MESES.map((mes, i) => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+      <input type="checkbox" class="export-mes-check" value="${i}" checked>
+      ${mes.charAt(0) + mes.slice(1).toLowerCase()}
+    </label>
+  `).join('');
+  document.getElementById('export-meses-modal').classList.add('show');
+});
+
+document.getElementById('btn-export-meses-todos').addEventListener('click', () => {
+  document.querySelectorAll('.export-mes-check').forEach(c => c.checked = true);
+});
+document.getElementById('btn-export-meses-ninguno').addEventListener('click', () => {
+  document.querySelectorAll('.export-mes-check').forEach(c => c.checked = false);
+});
+document.getElementById('btn-close-export-meses').addEventListener('click', () => {
+  document.getElementById('export-meses-modal').classList.remove('show');
+});
+document.getElementById('export-meses-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'export-meses-modal') document.getElementById('export-meses-modal').classList.remove('show');
+});
+document.getElementById('btn-export-meses-confirmar').addEventListener('click', () => {
+  const seleccionados = [...document.querySelectorAll('.export-mes-check:checked')].map(c => Number(c.value));
+  if(seleccionados.length === 0){
+    showToast('Elige al menos un mes para exportar.');
+    return;
+  }
+  document.getElementById('export-meses-modal').classList.remove('show');
+  exportCalifPdf(seleccionados);
+});
 
 function renderAttContent(){
   const photoEl = document.getElementById('att-photo');
@@ -4707,11 +4812,12 @@ document.getElementById('edit-att-modal').addEventListener('click', (e) => {
   if(e.target.id === 'edit-att-modal') document.getElementById('edit-att-modal').classList.remove('show');
 });
 
-function exportAttPdf(){
-  const emp = getAttEmpleado();
+function exportAttPdf(empArg){
+  const emp = empArg || getAttEmpleado();
   if(!emp) return;
   const asis = ensureAsistencia(emp);
   const { favor, contra, neto } = computeBalance(asis);
+  const promedio = computeAverage(emp);
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -4731,7 +4837,8 @@ function exportAttPdf(){
       ['Piazza (trabaja)', emp.piazza || '-'],
       ['Fecha de nacimiento', formatDate(emp.fechaNacimiento)],
       ['Fecha de ingreso', formatDate(emp.fechaIngreso)],
-      ['Turno', turnoSummary(emp.turno)]
+      ['Turno', turnoSummary(emp.turno)],
+      ['Promedio semanal', promedio === null ? 'Sin calificaciones' : promedio]
     ],
     theme: 'grid',
     styles: { fontSize: 9.5, cellPadding: 2.2, lineColor: [255,255,255], lineWidth: 1, valign: 'middle' },
@@ -5174,7 +5281,19 @@ async function loadEmpleados(){
   }
 }
 
-async function saveEmpleados(){
+let colaGuardadoEmpleados = Promise.resolve();
+function saveEmpleados(){
+  // Chain every save after whatever is already pending. Now that calls to
+  // this function don't get awaited before the UI moves on (see
+  // btn-save-cal above), someone could trigger several saves in quick
+  // succession — queuing them keeps each write in order instead of two
+  // overlapping network calls finishing out of order and the older one
+  // clobbering the newer one.
+  colaGuardadoEmpleados = colaGuardadoEmpleados.then(() => _saveEmpleadosAhora());
+  return colaGuardadoEmpleados;
+}
+
+async function _saveEmpleadosAhora(){
   syncLocked = true;
   try{
     await window.storage.set(STORAGE_KEY, JSON.stringify(empleados), true);
@@ -5470,6 +5589,8 @@ function openHoja(id){
 
   const photoEl = document.getElementById('hoja-photo');
   photoEl.innerHTML = e.foto ? `<img src="${e.foto}" alt="foto">` : '📷';
+
+  document.getElementById('hoja-resumen-asistencia').innerHTML = buildResumenAsistenciaHtml(e);
 
   renderComments(e);
 
