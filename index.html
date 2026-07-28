@@ -1140,6 +1140,11 @@
   .att-table.cols-4 th:nth-child(3), .att-table.cols-4 td:nth-child(3){ width: 15%; }
   .att-table.cols-4 th:nth-child(4), .att-table.cols-4 td:nth-child(4){ width: 50%; }
 
+  /* 3-column layout: Fecha | Tipo | Detalle — used by Novedades (Permiso, Otros). */
+  .att-table.cols-3 th:nth-child(1), .att-table.cols-3 td:nth-child(1){ width: 15%; }
+  .att-table.cols-3 th:nth-child(2), .att-table.cols-3 td:nth-child(2){ width: 20%; }
+  .att-table.cols-3 th:nth-child(3), .att-table.cols-3 td:nth-child(3){ width: 65%; }
+
   /* Editable 6-column layout used by Atrasos/Salidas entry tables: same
      5 widths as the read-only version, plus a narrow trailing action column. */
   .att-table.cols-edit6 th:nth-child(1), .att-table.cols-edit6 td:nth-child(1){ width: 12%; }
@@ -1650,6 +1655,7 @@
             <option value="atrasos">Atrasos</option>
             <option value="salidas">Salidas antes de tiempo</option>
             <option value="horas">Horas a favor</option>
+            <option value="novedades">Novedades (Permiso, Otros)</option>
             <option value="comportamiento">Comportamiento</option>
           </select>
         </div>
@@ -2077,6 +2083,12 @@ function buildResumenAsistenciaHtml(emp){
   const { favor, contra, neto } = computeBalance(asis);
   const balCls = neto > 0 ? 'favor' : (neto < 0 ? 'contra' : 'neutro');
 
+  const novedadesRows = asis.novedades.length
+    ? [...asis.novedades].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(n => `
+        <tr><td>${formatDate(n.fecha)}</td><td>${n.tipo}</td><td>${n.detalle || '—'}</td></tr>
+      `).join('')
+    : '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+
   return `
     <div class="perfil-promedio-badge balance-badge ${promBadgeCls}">
       Promedio semanal: ${promedio === null ? 'Sin calificaciones' : promedio}
@@ -2091,6 +2103,9 @@ function buildResumenAsistenciaHtml(emp){
     <div class="section-band section-band-perfil-sub">Horas a favor / en contra</div>
     <div class="balance-badge ${balCls}" style="margin-bottom:8px;">Balance: ${decimalHoursToHM(neto)} &nbsp;(${decimalHoursToHM(favor)} a favor · ${decimalHoursToHM(contra)} en contra)</div>
     <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th></tr></thead><tbody>${horasRows}</tbody></table>
+
+    <div class="section-band section-band-perfil-sub">Novedades (Permisos, Otros)</div>
+    <table class="att-table cols-3"><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead><tbody>${novedadesRows}</tbody></table>
   `;
 }
 
@@ -2303,10 +2318,11 @@ function getAttEmpleado(){
 }
 
 function ensureAsistencia(emp){
-  if(!emp.asistencia) emp.asistencia = { atrasos: [], salidas: [], horas: [] };
+  if(!emp.asistencia) emp.asistencia = { atrasos: [], salidas: [], horas: [], novedades: [] };
   if(!emp.asistencia.atrasos) emp.asistencia.atrasos = [];
   if(!emp.asistencia.salidas) emp.asistencia.salidas = [];
   if(!emp.asistencia.horas) emp.asistencia.horas = [];
+  if(!emp.asistencia.novedades) emp.asistencia.novedades = [];
   return emp.asistencia;
 }
 
@@ -3037,6 +3053,7 @@ async function syncFilaToAsistencia(rep, fila){
   const linkIdAtraso = 'repfila_' + fila.id + '_atraso';
   const linkIdSalida = 'repfila_' + fila.id + '_salida';
   const linkIdHoras = 'repfila_' + fila.id;
+  const linkIdNovedad = 'repfila_' + fila.id + '_novedad';
   // A plantilla semanal (Lunes, Martes...) usually never gets an explicit
   // Fecha filled in — it's meant to repeat every week. That must NOT block
   // the sync to Atrasos vs Horas a favor; fall back to today's date so the
@@ -3051,13 +3068,16 @@ async function syncFilaToAsistencia(rep, fila){
     if(e.asistencia){
       const antes = (e.asistencia.horas ? e.asistencia.horas.length : 0)
         + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
-        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0);
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0)
+        + (e.asistencia.novedades ? e.asistencia.novedades.length : 0);
       if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkIdHoras);
       if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
       if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
+      if(e.asistencia.novedades) e.asistencia.novedades = e.asistencia.novedades.filter(n => n.id !== linkIdNovedad);
       const despues = (e.asistencia.horas ? e.asistencia.horas.length : 0)
         + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
-        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0);
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0)
+        + (e.asistencia.novedades ? e.asistencia.novedades.length : 0);
       if(antes !== despues) cambioAlgo = true;
     }
   });
@@ -3106,6 +3126,20 @@ async function syncFilaToAsistencia(rep, fila){
       });
       cambioAlgo = true;
     }
+  }
+
+  // Novedad, Permiso, and Otros don't affect atrasos/horas balances, but
+  // they're still worth keeping on record so a full history of what was
+  // reported about this person is visible from their profile, not just
+  // buried inside whichever daily report happened to record it.
+  if(fila.tipo === 'Novedad' || fila.tipo === 'Permiso' || fila.tipo === 'Otros'){
+    asis.novedades.push({
+      id: linkIdNovedad,
+      fecha: fechaParaRegistro,
+      tipo: fila.tipo,
+      detalle: fila.detalle || ''
+    });
+    cambioAlgo = true;
   }
 
   return cambioAlgo;
@@ -3449,11 +3483,13 @@ function syncFilaToAsistenciaCleared(fila){
   const linkIdHoras = 'repfila_' + fila.id;
   const linkIdAtraso = 'repfila_' + fila.id + '_atraso';
   const linkIdSalida = 'repfila_' + fila.id + '_salida';
+  const linkIdNovedad = 'repfila_' + fila.id + '_novedad';
   empleados.forEach(e => {
     if(e.asistencia){
       if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h => h.id !== linkIdHoras);
       if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
       if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
+      if(e.asistencia.novedades) e.asistencia.novedades = e.asistencia.novedades.filter(n => n.id !== linkIdNovedad);
     }
   });
 }
@@ -3560,9 +3596,31 @@ function renderHistorialRepLista(){
   area.querySelectorAll('[data-action="del"]').forEach(btn => {
     btn.addEventListener('click', async () => {
       if(!confirm('¿Eliminar este reporte del historial? Esta acción no se puede deshacer.')) return;
-      historialIdsEliminados.add(btn.dataset.id);
-      historialReportes = historialReportes.filter(h => h.id !== btn.dataset.id);
-      await saveHistorialReportes();
+      const idBorrado = btn.dataset.id;
+      historialIdsEliminados.add(idBorrado);
+
+      // Clean up any Atrasos/Salidas/Horas/Novedades entries this historial
+      // record might have synced into an employee's profile (from an
+      // earlier edit), so deleting it doesn't leave orphaned entries
+      // pointing at a report that no longer exists.
+      const prefijo = 'histfila_' + idBorrado + '_';
+      let tocoEmpleados = false;
+      empleados.forEach(e => {
+        if(!e.asistencia) return;
+        ['atrasos','salidas','horas','novedades'].forEach(campo => {
+          if(!e.asistencia[campo]) return;
+          const antes = e.asistencia[campo].length;
+          e.asistencia[campo] = e.asistencia[campo].filter(r => !r.id.startsWith(prefijo));
+          if(e.asistencia[campo].length !== antes) tocoEmpleados = true;
+        });
+      });
+
+      historialReportes = historialReportes.filter(h => h.id !== idBorrado);
+      if(tocoEmpleados){
+        await Promise.all([saveHistorialReportes(), saveEmpleados()]);
+      } else {
+        await saveHistorialReportes();
+      }
       renderHistorialRepLista();
       showToast('Eliminado del historial.');
     });
@@ -3605,6 +3663,90 @@ function verHistorialRepDetalle(id){
   document.getElementById('historial-rep-modal').classList.add('show');
 }
 
+async function syncFilaHistorialToAsistencia(h, fila){
+  // Mirrors syncFilaToAsistencia, but for an archived Historial entry. Uses
+  // its own "histfila_" linkId prefix (never "repfila_") so editing a
+  // historial record can never clash with, or get overwritten by, the
+  // live report/plantilla it was originally archived from.
+  const linkIdAtraso = 'histfila_' + h.id + '_' + fila.id + '_atraso';
+  const linkIdSalida = 'histfila_' + h.id + '_' + fila.id + '_salida';
+  const linkIdHoras = 'histfila_' + h.id + '_' + fila.id;
+  const linkIdNovedad = 'histfila_' + h.id + '_' + fila.id + '_novedad';
+  const fechaParaRegistro = h.fecha || (h.archivadoEn ? new Date(h.archivadoEn).toISOString().slice(0,10) : new Date().toISOString().slice(0,10));
+
+  let cambioAlgo = false;
+
+  empleados.forEach(e => {
+    if(e.asistencia){
+      const antes = (e.asistencia.horas ? e.asistencia.horas.length : 0)
+        + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0)
+        + (e.asistencia.novedades ? e.asistencia.novedades.length : 0);
+      if(e.asistencia.horas) e.asistencia.horas = e.asistencia.horas.filter(h2 => h2.id !== linkIdHoras);
+      if(e.asistencia.atrasos) e.asistencia.atrasos = e.asistencia.atrasos.filter(a => a.id !== linkIdAtraso);
+      if(e.asistencia.salidas) e.asistencia.salidas = e.asistencia.salidas.filter(s => s.id !== linkIdSalida);
+      if(e.asistencia.novedades) e.asistencia.novedades = e.asistencia.novedades.filter(n => n.id !== linkIdNovedad);
+      const despues = (e.asistencia.horas ? e.asistencia.horas.length : 0)
+        + (e.asistencia.atrasos ? e.asistencia.atrasos.length : 0)
+        + (e.asistencia.salidas ? e.asistencia.salidas.length : 0)
+        + (e.asistencia.novedades ? e.asistencia.novedades.length : 0);
+      if(antes !== despues) cambioAlgo = true;
+    }
+  });
+
+  if(!fila.empleadoId || fila.empleadoId === '__manual__') return cambioAlgo;
+  const emp = empleados.find(e => e.id === fila.empleadoId);
+  if(!emp) return cambioAlgo;
+
+  const asis = ensureAsistencia(emp);
+  const rango = parseHorarioRango(fila.horario);
+
+  if(rango && fila.ingreso && rango.inicio && (fila._atrasoMin || 0) > 0){
+    asis.atrasos.push({
+      id: linkIdAtraso,
+      fecha: fechaParaRegistro,
+      horaInicio: rango.inicio,
+      horaFin: fila.ingreso,
+      motivo: `${fila.detalle || 'Atraso'} (Historial de reportes)`
+    });
+    cambioAlgo = true;
+  }
+  if(rango && fila.salida && rango.fin && (fila._salidaTempranoMin || 0) > 0){
+    asis.salidas.push({
+      id: linkIdSalida,
+      fecha: fechaParaRegistro,
+      horaInicio: fila.salida,
+      horaFin: rango.fin,
+      motivo: `${fila.detalle || 'Salida antes de tiempo'} (Historial de reportes)`
+    });
+    cambioAlgo = true;
+  }
+  if(fila.tipo === 'Horas extras'){
+    const horas = Number(fila.horas) || 0;
+    if(horas > 0){
+      asis.horas.push({
+        id: linkIdHoras,
+        fecha: fechaParaRegistro,
+        tipo: 'favor',
+        horas,
+        motivo: `${fila.detalle || fila.tipo} (Historial de reportes)`
+      });
+      cambioAlgo = true;
+    }
+  }
+  if(fila.tipo === 'Novedad' || fila.tipo === 'Permiso' || fila.tipo === 'Otros'){
+    asis.novedades.push({
+      id: linkIdNovedad,
+      fecha: fechaParaRegistro,
+      tipo: fila.tipo,
+      detalle: fila.detalle || ''
+    });
+    cambioAlgo = true;
+  }
+
+  return cambioAlgo;
+}
+
 function editarHistorialRepDetalle(id){
   const h = historialReportes.find(x => x.id === id);
   if(!h) return;
@@ -3645,7 +3787,7 @@ function editarHistorialRepDetalle(id){
     <button class="btn-mini" id="btn-guardar-edicion-historial" style="background:var(--celeste); color:#fff; border-color:var(--celeste);">💾 Guardar cambios</button>
   </div>
   <div style="font-size:12px; color:var(--ink-soft); text-align:center; margin-top:8px;">
-    Nota: los cambios aquí solo corrigen este registro archivado — no vuelven a sincronizarse con "Atrasos vs Horas a favor" (esa vinculación pertenece al reporte original).
+    Los cambios que hagas aquí también actualizan Atrasos, Salidas, Horas a favor y Novedades del trabajador (con su propio registro, independiente del reporte original en vivo).
   </div>`;
 
   document.getElementById('historial-rep-modal-body').innerHTML = bodyHtml;
@@ -3670,7 +3812,20 @@ function editarHistorialRepDetalle(id){
   });
 
   document.getElementById('btn-guardar-edicion-historial').addEventListener('click', async () => {
-    await saveHistorialReportes();
+    let tocoEmpleados = false;
+    for(const pg of h.piazzas){
+      for(const fila of pg.filas){
+        const cambio = await syncFilaHistorialToAsistencia(h, fila);
+        if(cambio) tocoEmpleados = true;
+      }
+    }
+
+    if(tocoEmpleados){
+      await Promise.all([saveHistorialReportes(), saveEmpleados()]);
+    } else {
+      await saveHistorialReportes();
+    }
+
     document.getElementById('historial-rep-modal').classList.remove('show');
     renderHistorialRepLista();
     showToast('Cambios guardados en el historial.');
@@ -4293,6 +4448,17 @@ function renderAttContent(){
       </table>
       <div id="balance-area"></div>
     `;
+  } else if(tipo === 'novedades'){
+    sectionHtml = `
+      <div class="section-band">NOVEDADES (PERMISO, OTROS)</div>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px;">
+        Esto se llena automáticamente desde el Reporte Diario de Mantenimiento cuando a este trabajador se le marca Novedad, Permiso u Otros — no se agrega manualmente aquí.
+      </p>
+      <table class="att-table cols-3">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead>
+        <tbody id="novedades-tbody"></tbody>
+      </table>
+    `;
   } else if(tipo === 'comportamiento'){
     sectionHtml = `
       <div class="section-band">COMPORTAMIENTO</div>
@@ -4354,6 +4520,8 @@ function renderAttContent(){
     renderHorasTable(asis);
     renderBalance(asis);
     document.getElementById('btn-add-hora').addEventListener('click', addHora);
+  } else if(tipo === 'novedades'){
+    renderNovedadesTable(asis);
   } else if(tipo === 'comportamiento'){
     renderAttComentarios(emp);
     currentCompFotoData = null;
@@ -4526,6 +4694,18 @@ function renderHorasTable(asis){
   `).join('');
   tbody.querySelectorAll('.edit-row').forEach(btn => btn.addEventListener('click', () => editarAttRow(btn.dataset.tipo, btn.dataset.id)));
   tbody.querySelectorAll('.del-row').forEach(btn => btn.addEventListener('click', () => deleteAttRow(btn.dataset.tipo, btn.dataset.id)));
+}
+
+function renderNovedadesTable(asis){
+  const tbody = document.getElementById('novedades-tbody');
+  if(!tbody) return;
+  if(!asis.novedades.length){
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...asis.novedades].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(n => `
+    <tr><td>${formatDate(n.fecha)}</td><td>${n.tipo}</td><td>${n.detalle || '—'}</td></tr>
+  `).join('');
 }
 
 function autoContraHorasFromAtrasosYSalidas(asis){
