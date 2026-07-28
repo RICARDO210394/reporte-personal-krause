@@ -2329,6 +2329,54 @@ function ensureAsistencia(emp){
   return emp.asistencia;
 }
 
+function dedupePorClave(lista, keyFn){
+  const vistos = new Set();
+  const resultado = [];
+  let huboDuplicados = false;
+  lista.forEach(item => {
+    const clave = keyFn(item);
+    if(vistos.has(clave)){
+      huboDuplicados = true; // keep only the FIRST one seen for this key
+      return;
+    }
+    vistos.add(clave);
+    resultado.push(item);
+  });
+  return { resultado, huboDuplicados };
+}
+
+// If the same day ends up reported more than once for the same person (a
+// report archived twice, or the same day synced from both the live report
+// and the historial), this keeps only the first occurrence of each — same
+// idea for atrasos, salidas, horas a favor/contra, and novedades.
+function dedupeAsistenciaEmpleado(emp){
+  if(!emp.asistencia) return false;
+  let huboAlgo = false;
+
+  if(emp.asistencia.atrasos){
+    const { resultado, huboDuplicados } = dedupePorClave(emp.asistencia.atrasos, a => `${a.fecha}|${a.horaInicio}|${a.horaFin}`);
+    emp.asistencia.atrasos = resultado;
+    if(huboDuplicados) huboAlgo = true;
+  }
+  if(emp.asistencia.salidas){
+    const { resultado, huboDuplicados } = dedupePorClave(emp.asistencia.salidas, s => `${s.fecha}|${s.horaInicio}|${s.horaFin}`);
+    emp.asistencia.salidas = resultado;
+    if(huboDuplicados) huboAlgo = true;
+  }
+  if(emp.asistencia.horas){
+    const { resultado, huboDuplicados } = dedupePorClave(emp.asistencia.horas, h => `${h.fecha}|${h.tipo}|${h.horas}`);
+    emp.asistencia.horas = resultado;
+    if(huboDuplicados) huboAlgo = true;
+  }
+  if(emp.asistencia.novedades){
+    const { resultado, huboDuplicados } = dedupePorClave(emp.asistencia.novedades, n => `${n.fecha}|${n.tipo}|${n.detalle}`);
+    emp.asistencia.novedades = resultado;
+    if(huboDuplicados) huboAlgo = true;
+  }
+
+  return huboAlgo;
+}
+
 // ---- Calificación Semanal module ----
 
 let calModalEmpId = null;
@@ -3528,6 +3576,10 @@ async function recopilarTodoElHistorial(){
       }
     }
   }
+
+  empleados.forEach(emp => {
+    if(dedupeAsistenciaEmpleado(emp)) tocoEmpleados = true;
+  });
 
   if(tocoEmpleados) await saveEmpleados();
   showToast(`Historial recopilado: ${filasProcesadas} registros revisados.`);
@@ -5424,6 +5476,20 @@ async function migrarNombrePiazzaFCGaFinca(){
   return huboCambio;
 }
 
+// One-time-per-employee cleanup: removes duplicate Atrasos/Salidas/Horas/
+// Novedades entries — same day, same content, reported more than once
+// (e.g. a report archived twice, or picked up from both the live report
+// and the historial) — keeping only the first of each.
+async function limpiarDuplicadosDeTodos(){
+  let huboCambio = false;
+  empleados.forEach(emp => {
+    ensureAsistencia(emp);
+    if(dedupeAsistenciaEmpleado(emp)) huboCambio = true;
+  });
+  if(huboCambio) await saveEmpleados();
+  return huboCambio;
+}
+
 async function loadEmpleados(){
   if(syncLocked) return;
   try{
@@ -5446,14 +5512,15 @@ async function loadEmpleados(){
     hasLoadedOnce = true;
     consecutiveLoadErrors = 0;
     const huboMigracion = await migrarNombrePiazzaFCGaFinca();
-    if(huboCambios || huboMigracion) renderList();
+    const huboDedup = await limpiarDuplicadosDeTodos();
+    if(huboCambios || huboMigracion || huboDedup) renderList();
     // The Reporte Diario and Vista de Perfil worker dropdowns depend on the
     // employee list too; refresh them only when the list actually changed,
     // and only if their tab is currently open.
-    if((huboCambios || huboMigracion) && document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
+    if((huboCambios || huboMigracion || huboDedup) && document.getElementById('tab-reporte') && document.getElementById('tab-reporte').classList.contains('active')){
       renderReporteTable();
     }
-    if((huboCambios || huboMigracion) && document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
+    if((huboCambios || huboMigracion || huboDedup) && document.getElementById('tab-perfil') && document.getElementById('tab-perfil').classList.contains('active')){
       const piazzaSel = document.getElementById('perfil-piazza');
       if(piazzaSel && piazzaSel.value) refreshPerfilEmpleadoOptions();
     }
