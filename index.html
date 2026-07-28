@@ -1782,6 +1782,9 @@
     <!-- HISTORIAL DE REPORTES PANEL -->
     <div class="panel tab-panel" id="tab-historial-rep">
       <div class="section-band" style="background:#3a3f6b;">HISTORIAL DE REPORTES DE MANTENIMIENTO</div>
+      <div style="text-align:right; margin-bottom:10px;">
+        <span class="btn-mini" id="btn-recopilar-historial" style="background:#8a5cb8; color:#fff; border-color:#8a5cb8;">🔄 Recopilar información de todo el historial</span>
+      </div>
       <div id="historial-rep-lista"></div>
     </div>
 
@@ -3502,6 +3505,35 @@ function claseFilaSegunTipo(tipo){
 }
 
 let historialGruposAbiertos = {};
+
+async function recopilarTodoElHistorial(){
+  if(historialReportes.length === 0){
+    showToast('No hay reportes en el historial todavía.');
+    return;
+  }
+  if(!confirm(
+    `Esto revisa los ${historialReportes.length} reportes del historial y actualiza Atrasos, Salidas, Horas a favor y Novedades de cada trabajador según lo que diga cada uno.\n\n` +
+    `Ya sincronizados no se duplican — solo se completa lo que faltaba. ¿Continuar?`
+  )) return;
+
+  let tocoEmpleados = false;
+  let filasProcesadas = 0;
+  for(const h of historialReportes){
+    for(const pg of h.piazzas){
+      for(const fila of pg.filas){
+        aplicarAutoDeteccion(fila);
+        const cambio = await syncFilaHistorialToAsistencia(h, fila);
+        if(cambio) tocoEmpleados = true;
+        filasProcesadas++;
+      }
+    }
+  }
+
+  if(tocoEmpleados) await saveEmpleados();
+  showToast(`Historial recopilado: ${filasProcesadas} registros revisados.`);
+}
+
+document.getElementById('btn-recopilar-historial').addEventListener('click', recopilarTodoElHistorial);
 
 function renderHistorialRepLista(){
   const area = document.getElementById('historial-rep-lista');
