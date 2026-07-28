@@ -1154,6 +1154,20 @@
   .att-table.cols-edit6 th:nth-child(5), .att-table.cols-edit6 td:nth-child(5){ width: 27%; }
   .att-table.cols-edit6 th:nth-child(6), .att-table.cols-edit6 td:nth-child(6){ width: 8%; }
 
+  /* 5-column layout: Fecha | Tipo | Detalle | Foto | (delete) — used by Novedades. */
+  .att-table.cols-novedad-edit th:nth-child(1), .att-table.cols-novedad-edit td:nth-child(1){ width: 13%; }
+  .att-table.cols-novedad-edit th:nth-child(2), .att-table.cols-novedad-edit td:nth-child(2){ width: 15%; }
+  .att-table.cols-novedad-edit th:nth-child(3), .att-table.cols-novedad-edit td:nth-child(3){ width: 47%; }
+  .att-table.cols-novedad-edit th:nth-child(4), .att-table.cols-novedad-edit td:nth-child(4){ width: 15%; }
+  .att-table.cols-novedad-edit th:nth-child(5), .att-table.cols-novedad-edit td:nth-child(5){ width: 10%; }
+
+  /* 4-column read-only layout: Fecha | Tipo | Detalle | Foto — used by the
+     Novedades table in Vista de Perfil / Hoja de Comportamiento. */
+  .att-table.cols-novedad-ro th:nth-child(1), .att-table.cols-novedad-ro td:nth-child(1){ width: 15%; }
+  .att-table.cols-novedad-ro th:nth-child(2), .att-table.cols-novedad-ro td:nth-child(2){ width: 17%; }
+  .att-table.cols-novedad-ro th:nth-child(3), .att-table.cols-novedad-ro td:nth-child(3){ width: 53%; }
+  .att-table.cols-novedad-ro th:nth-child(4), .att-table.cols-novedad-ro td:nth-child(4){ width: 15%; }
+
   /* Editable Horas a favor table: same 4 widths as read-only, plus action column. */
   .att-table.cols-horas-edit th:nth-child(1), .att-table.cols-horas-edit td:nth-child(1){ width: 14%; }
   .att-table.cols-horas-edit th:nth-child(2), .att-table.cols-horas-edit td:nth-child(2){ width: 18%; }
@@ -1793,6 +1807,15 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="foto-lightbox-modal">
+  <div class="modal-box" style="max-width:640px; text-align:center;">
+    <div class="modal-close-row">
+      <div class="btn-mini" id="btn-close-foto-lightbox">✕ Cerrar</div>
+    </div>
+    <img id="foto-lightbox-img" src="" alt="foto ampliada" style="max-width:100%; max-height:70vh; border-radius:10px;">
+  </div>
+</div>
+
 <div class="modal-overlay" id="historial-rep-modal">
   <div class="modal-box" style="max-width:900px;">
     <div class="modal-close-row">
@@ -2054,6 +2077,12 @@ document.getElementById('perfil-empleado').addEventListener('change', (e) => {
   else document.getElementById('perfil-content').innerHTML = '<div class="att-empty-hint">Selecciona un trabajador para ver su perfil completo.</div>';
 });
 
+function wireNovedadFotosSoloLectura(container){
+  container.querySelectorAll('.novedad-foto-thumb-ro').forEach(img => {
+    img.addEventListener('click', () => verFotoAmpliada(img.dataset.foto));
+  });
+}
+
 function buildResumenAsistenciaHtml(emp){
   const asis = ensureAsistencia(emp);
   const promedio = computeAverage(emp);
@@ -2088,9 +2117,12 @@ function buildResumenAsistenciaHtml(emp){
 
   const novedadesRows = asis.novedades.length
     ? [...asis.novedades].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(n => `
-        <tr><td>${formatDate(n.fecha)}</td><td>${n.tipo}</td><td>${n.detalle || '—'}</td></tr>
+        <tr>
+          <td>${formatDate(n.fecha)}</td><td>${n.tipo}</td><td>${n.detalle || '—'}</td>
+          <td>${n.foto ? `<img src="${n.foto}" alt="foto" class="novedad-foto-thumb-ro" data-foto="${n.foto}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;">` : '—'}</td>
+        </tr>
       `).join('')
-    : '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    : '<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
 
   return `
     <div class="perfil-promedio-badge balance-badge ${promBadgeCls}">
@@ -2108,7 +2140,7 @@ function buildResumenAsistenciaHtml(emp){
     <table class="att-table cols-4"><thead><tr><th>Fecha</th><th>Tipo</th><th>Horas</th><th>Motivo</th></tr></thead><tbody>${horasRows}</tbody></table>
 
     <div class="section-band section-band-perfil-sub">Novedades (Permisos, Otros)</div>
-    <table class="att-table cols-3"><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead><tbody>${novedadesRows}</tbody></table>
+    <table class="att-table cols-novedad-ro"><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Foto</th></tr></thead><tbody>${novedadesRows}</tbody></table>
   `;
 }
 
@@ -2169,6 +2201,7 @@ function renderPerfil(empId){
   `;
 
   document.getElementById('btn-exportar-perfil').addEventListener('click', () => exportarPerfilPdf(emp.id));
+  wireNovedadFotosSoloLectura(content);
 }
 
 // Tabs
@@ -2188,6 +2221,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 let attSelectedId = null;
 let currentCompFotoData = null; // base64 of the "llamado de atención firmado" photo currently in the form
+let currentNovFotoData = null; // base64 of the Novedad/Permiso/Otros attachment (e.g. medical certificate) currently in the form
 
 function minutesBetween(horaInicio, horaFin){
   if(!horaInicio || !horaFin) return 0;
@@ -4536,10 +4570,34 @@ function renderAttContent(){
     sectionHtml = `
       <div class="section-band">NOVEDADES (PERMISO, OTROS)</div>
       <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 10px;">
-        Esto se llena automáticamente desde el Reporte Diario de Mantenimiento cuando a este trabajador se le marca Novedad, Permiso u Otros — no se agrega manualmente aquí.
+        Esto se llena automáticamente desde el Reporte Diario de Mantenimiento cuando a este trabajador se le marca Novedad, Permiso u Otros — pero también puedes agregar uno manualmente aquí (por ejemplo, para adjuntar el certificado de un permiso médico).
       </p>
-      <table class="att-table cols-3">
-        <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead>
+      <div class="att-form" style="align-items:flex-start;">
+        <div class="field"><label>Fecha</label><input type="date" id="nov-fecha"></div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="nov-tipo">
+            <option value="Novedad">Novedad</option>
+            <option value="Permiso">Permiso</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div class="field grow"><label>Detalle</label><input type="text" id="nov-detalle" placeholder="Ej: Permiso médico, certificado adjunto"></div>
+        <div class="field">
+          <label>Foto (certificado, etc.)</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="nov-photo-preview">📷</div>
+            <div class="photo-btns">
+              <label class="btn-mini" for="nov-foto">Subir foto</label>
+              <input type="file" id="nov-foto" accept="image/*">
+              <div class="btn-mini" id="nov-quitar-foto">Quitar foto</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-add-row" id="btn-add-novedad">＋ Agregar</button>
+      </div>
+      <table class="att-table cols-novedad-edit">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Foto</th><th></th></tr></thead>
         <tbody id="novedades-tbody"></tbody>
       </table>
     `;
@@ -4606,6 +4664,26 @@ function renderAttContent(){
     document.getElementById('btn-add-hora').addEventListener('click', addHora);
   } else if(tipo === 'novedades'){
     renderNovedadesTable(asis);
+    currentNovFotoData = null;
+    setNovFotoPreview(null);
+
+    document.getElementById('nov-foto').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      try{
+        const dataUrl = await compressImage(file, 700, 0.75);
+        currentNovFotoData = dataUrl;
+        setNovFotoPreview(dataUrl);
+      } catch(err){
+        showToast('No se pudo procesar la foto.');
+      }
+    });
+    document.getElementById('nov-quitar-foto').addEventListener('click', () => {
+      currentNovFotoData = null;
+      document.getElementById('nov-foto').value = '';
+      setNovFotoPreview(null);
+    });
+    document.getElementById('btn-add-novedad').addEventListener('click', addNovedadManual);
   } else if(tipo === 'comportamiento'){
     renderAttComentarios(emp);
     currentCompFotoData = null;
@@ -4638,10 +4716,59 @@ function renderAttContent(){
   document.getElementById('btn-export-pdf').addEventListener('click', exportAttPdf);
 }
 
+function verFotoAmpliada(url){
+  document.getElementById('foto-lightbox-img').src = url;
+  document.getElementById('foto-lightbox-modal').classList.add('show');
+}
+document.getElementById('btn-close-foto-lightbox').addEventListener('click', () => {
+  document.getElementById('foto-lightbox-modal').classList.remove('show');
+});
+document.getElementById('foto-lightbox-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'foto-lightbox-modal') document.getElementById('foto-lightbox-modal').classList.remove('show');
+});
+
 function setCompFotoPreview(dataUrl){
   const prev = document.getElementById('comp-photo-preview');
   if(!prev) return;
   prev.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="foto">` : '📷';
+}
+
+function setNovFotoPreview(dataUrl){
+  const prev = document.getElementById('nov-photo-preview');
+  if(!prev) return;
+  prev.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="foto">` : '📷';
+}
+
+async function addNovedadManual(){
+  const emp = getAttEmpleado();
+  if(!emp) return;
+  const fecha = document.getElementById('nov-fecha').value;
+  const tipoNov = document.getElementById('nov-tipo').value;
+  const detalle = document.getElementById('nov-detalle').value.trim();
+
+  if(!fecha){
+    showToast('Elige una fecha para la novedad.');
+    return;
+  }
+
+  const asis = ensureAsistencia(emp);
+  asis.novedades.push({
+    id: 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    fecha,
+    tipo: tipoNov,
+    detalle,
+    foto: currentNovFotoData || ''
+  });
+
+  document.getElementById('nov-fecha').value = '';
+  document.getElementById('nov-detalle').value = '';
+  document.getElementById('nov-foto').value = '';
+  currentNovFotoData = null;
+  setNovFotoPreview(null);
+
+  renderNovedadesTable(asis);
+  showToast('Novedad agregada.');
+  saveEmpleados();
 }
 
 const PROCEDIMIENTO_LABELS = {
@@ -4784,12 +4911,39 @@ function renderNovedadesTable(asis){
   const tbody = document.getElementById('novedades-tbody');
   if(!tbody) return;
   if(!asis.novedades.length){
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);">Sin registros.</td></tr>';
     return;
   }
   tbody.innerHTML = [...asis.novedades].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(n => `
-    <tr><td>${formatDate(n.fecha)}</td><td>${n.tipo}</td><td>${n.detalle || '—'}</td></tr>
+    <tr data-id="${n.id}">
+      <td>${formatDate(n.fecha)}</td>
+      <td>${n.tipo}</td>
+      <td>${n.detalle || '—'}</td>
+      <td>${n.foto ? `<img src="${n.foto}" alt="foto" class="novedad-foto-thumb" data-id="${n.id}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;">` : '—'}</td>
+      <td><span class="del-row" data-id="${n.id}" title="Eliminar">🗑</span></td>
+    </tr>
   `).join('');
+
+  tbody.querySelectorAll('.novedad-foto-thumb').forEach(img => {
+    img.addEventListener('click', () => {
+      const n = asis.novedades.find(x => x.id === img.dataset.id);
+      if(n && n.foto) verFotoAmpliada(n.foto);
+    });
+  });
+  tbody.querySelectorAll('.del-row').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const n = asis.novedades.find(x => x.id === btn.dataset.id);
+      const esAutomatica = n && (n.id.startsWith('repfila_') || n.id.startsWith('histfila_'));
+      const advertencia = esAutomatica
+        ? '\n\nEsta novedad viene del Reporte Diario de Mantenimiento — si vuelves a tocar esa fila en el reporte original, se va a volver a generar.'
+        : '';
+      if(!confirm('¿Eliminar esta novedad?' + advertencia)) return;
+      asis.novedades = asis.novedades.filter(x => x.id !== btn.dataset.id);
+      renderNovedadesTable(asis);
+      showToast('Novedad eliminada.');
+      saveEmpleados();
+    });
+  });
 }
 
 function autoContraHorasFromAtrasosYSalidas(asis){
@@ -5870,6 +6024,7 @@ function openHoja(id){
   photoEl.innerHTML = e.foto ? `<img src="${e.foto}" alt="foto">` : '📷';
 
   document.getElementById('hoja-resumen-asistencia').innerHTML = buildResumenAsistenciaHtml(e);
+  wireNovedadFotosSoloLectura(document.getElementById('hoja-resumen-asistencia'));
 
   renderComments(e);
 
