@@ -5283,7 +5283,7 @@ function exportAttPdf(empArg){
     startY: y + 4,
     head: [['Fecha','Hora que debía ingresar','Hora que ingresó','Total','Motivo']],
     body: asis.atrasos.length
-      ? asis.atrasos.map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
+      ? [...asis.atrasos].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
       : [['-','-','-','-','Sin registros']],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [20,184,200] },
@@ -5297,7 +5297,7 @@ function exportAttPdf(empArg){
     startY: y + 4,
     head: [['Fecha','Hora que salió','Hora que debía salir','Total','Motivo']],
     body: asis.salidas.length
-      ? asis.salidas.map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
+      ? [...asis.salidas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => [formatDate(r.fecha), r.horaInicio || '-', r.horaFin || '-', formatMinutes(minutesBetween(r.horaInicio, r.horaFin)), r.motivo || '-'])
       : [['-','-','-','-','Sin registros']],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [20,184,200] },
@@ -5311,11 +5311,25 @@ function exportAttPdf(empArg){
     startY: y + 4,
     head: [['Fecha','Tipo','Horas','Motivo']],
     body: asis.horas.length
-      ? asis.horas.map(r => [formatDate(r.fecha), r.tipo === 'favor' ? 'A favor' : 'En contra', decimalHoursToHM(r.horas), r.motivo || '-'])
+      ? [...asis.horas].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(r => [formatDate(r.fecha), r.tipo === 'favor' ? 'A favor' : 'En contra', decimalHoursToHM(r.horas), r.motivo || '-'])
       : [['-','-','-','Sin registros']],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [20,184,200] },
     columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 48 }, 2: { cellWidth: 48 }, 3: { cellWidth: 64 } },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  doc.text('Novedades (Permiso, Otros)', 14, y);
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Fecha','Tipo','Detalle']],
+    body: asis.novedades.length
+      ? [...asis.novedades].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).map(n => [formatDate(n.fecha), n.tipo, n.detalle || '-'])
+      : [['-','-','Sin registros']],
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [20,184,200] },
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 32 }, 2: { cellWidth: 130 } },
     margin: { left: 14, right: 14 }
   });
   y = doc.lastAutoTable.finalY + 12;
@@ -5326,7 +5340,7 @@ function exportAttPdf(empArg){
     startY: y + 4,
     head: [['Fecha','Procedimiento','Reporte']],
     body: comentarios.length
-      ? comentarios.map(c => c.reporte !== undefined
+      ? [...comentarios].sort((a,b) => (b.createdAt||b.fecha||0) - (a.createdAt||a.fecha||0)).map(c => c.reporte !== undefined
           ? [formatDate(c.fecha), (PROCEDIMIENTO_LABELS[c.procedimiento] || c.procedimiento || '-') + (c.procedimiento === 'sancion' && c.porcentaje ? ` (${c.porcentaje}%)` : ''), c.reporte || '-']
           : [new Date(c.fecha).toLocaleDateString('es-EC'), '-', c.texto || '-'])
       : [['-','-','Sin registros']],
